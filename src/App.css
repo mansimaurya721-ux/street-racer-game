@@ -1,0 +1,1015 @@
+/* =========================================================
+   STREET RACER - REACT APP CSS
+   ========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: white;
+    background: radial-gradient( circle at 50% -10%, #123b63 0%, #071426 30%, #020617 65%, #000 100%);
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   ROOT
+   ========================================================= */
+
+#root {
+    min-height: 100vh;
+}
+
+
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+
+.container {
+    width: min(1250px, 96%);
+    margin: auto;
+    padding: 18px 0 30px;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.logo {
+    width: 55px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    border-radius: 16px;
+    background: linear-gradient( 145deg, #1e293b, #0f172a);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    box-shadow: 0 0 25px rgba(14, 165, 233, 0.18);
+}
+
+.brand-text h1 {
+    font-size: clamp(24px, 4vw, 40px);
+    letter-spacing: 4px;
+    line-height: 1;
+    font-weight: 950;
+    background: linear-gradient( 90deg, #ffffff, #7dd3fc, #38bdf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-text p {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 9px;
+    letter-spacing: 5px;
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   GAME LAYOUT
+   ========================================================= */
+
+.gameLayout {
+    display: grid;
+    grid-template-columns: 145px minmax(350px, 520px) 145px;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+    width: 100%;
+}
+
+
+/* =========================================================
+   SIDE DASHBOARD
+   ========================================================= */
+
+.sideBoard {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 145px;
+}
+
+.statCard {
+    min-height: 135px;
+    padding: 18px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 22px;
+    background: linear-gradient( 145deg, rgba(30, 41, 59, 0.96), rgba(2, 6, 23, 0.96));
+    border: 1px solid rgba( 56, 189, 248, 0.18);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba( 56, 189, 248, 0.025);
+    backdrop-filter: blur(14px);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.statCard:hover {
+    transform: translateY(-4px);
+    border-color: rgba( 56, 189, 248, 0.45);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba( 56, 189, 248, 0.08);
+}
+
+.statIcon {
+    font-size: 27px;
+    margin-bottom: 8px;
+}
+
+.statCard .label {
+    color: #64748b;
+    font-size: 9px;
+    letter-spacing: 2px;
+    font-weight: 900;
+}
+
+.statCard strong {
+    margin-top: 5px;
+    font-size: 25px;
+    color: #f8fafc;
+    font-weight: 950;
+}
+
+.coinCard strong {
+    color: #facc15;
+    text-shadow: 0 0 12px rgba( 250, 204, 21, 0.45);
+}
+
+.speedCard strong {
+    color: #38bdf8;
+}
+
+.speedCard small {
+    display: block;
+    margin-top: 2px;
+    color: #64748b;
+    font-size: 7px;
+    letter-spacing: 1px;
+}
+
+
+/* =========================================================
+   GAME AREA
+   ========================================================= */
+
+.gameArea {
+    position: relative;
+    width: 100%;
+    height: clamp( 520px, 72vh, 720px);
+    overflow: hidden;
+    border-radius: 28px;
+    border: 3px solid #334155;
+    background: linear-gradient( 90deg, #0f172a 0%, #1e293b 5%, #252525 8%, #242424 50%, #252525 92%, #1e293b 95%, #0f172a 100%);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), 0 0 45px rgba( 14, 165, 233, 0.12);
+    isolation: isolate;
+}
+
+
+/* =========================================================
+   ROAD GLOW
+   ========================================================= */
+
+.roadGlow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 70px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.leftGlow {
+    left: 0;
+    background: linear-gradient( 90deg, rgba(14, 165, 233, 0.16), transparent);
+}
+
+.rightGlow {
+    right: 0;
+    background: linear-gradient( 270deg, rgba(14, 165, 233, 0.16), transparent);
+}
+
+
+/* =========================================================
+   ROAD EDGES
+   ========================================================= */
+
+.roadEdge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient( to bottom, #38bdf8, #0ea5e9, #38bdf8);
+    box-shadow: 0 0 12px rgba( 56, 189, 248, 0.9);
+    z-index: 3;
+    pointer-events: none;
+}
+
+.leftEdge {
+    left: 42px;
+}
+
+.rightEdge {
+    right: 42px;
+}
+
+
+/* =========================================================
+   ROAD LINES
+   ========================================================= */
+
+.roadLine {
+    position: absolute;
+    top: -160px;
+    width: 5px;
+    height: 115px;
+    border-radius: 10px;
+    background: rgba( 255, 255, 255, 0.72);
+    box-shadow: 0 0 9px rgba( 255, 255, 255, 0.25);
+    z-index: 2;
+    pointer-events: none;
+    animation: roadMove 0.9s linear infinite;
+}
+
+.roadLine1,
+.roadLine4 {
+    left: 25%;
+}
+
+.roadLine2,
+.roadLine5 {
+    left: 50%;
+}
+
+.roadLine3,
+.roadLine6 {
+    left: 75%;
+}
+
+.roadLine4,
+.roadLine5,
+.roadLine6 {
+    animation-delay: 0.45s;
+}
+
+@keyframes roadMove {
+    from {
+        transform: translateY(-50px);
+    }
+    to {
+        transform: translateY(850px);
+    }
+}
+
+
+/* =========================================================
+   PLAYER CAR
+   ========================================================= */
+
+.playerWrapper {
+    position: absolute;
+    left: 0;
+    bottom: 30px;
+    width: 100%;
+    height: 125px;
+    z-index: 12;
+    pointer-events: none;
+}
+
+.playerCar {
+    position: absolute;
+    bottom: 0;
+    width: 76px;
+    height: auto;
+    object-fit: contain;
+    transform-origin: center;
+    filter: drop-shadow( 0 10px 9px rgba( 0, 0, 0, 0.65));
+    z-index: 13;
+    user-select: none;
+}
+
+
+/* =========================================================
+   ENEMY CARS
+   ========================================================= */
+
+.enemyCar {
+    position: absolute;
+    top: -180px;
+    width: 70px;
+    height: auto;
+    object-fit: contain;
+    z-index: 8;
+    pointer-events: none;
+    filter: drop-shadow( 0 8px 8px rgba( 0, 0, 0, 0.65));
+    user-select: none;
+}
+
+
+/* =========================================================
+   COLLECTIBLES
+   ========================================================= */
+
+#coinContainer,
+#letterContainer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#coinContainer {
+    z-index: 15;
+}
+
+#letterContainer {
+    z-index: 17;
+}
+
+
+/* =========================================================
+   COINS
+   ========================================================= */
+
+.coin {
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 29px;
+    animation: coinSpin 0.8s linear infinite, coinFloat 1.1s ease-in-out infinite;
+    z-index: 16;
+    pointer-events: none;
+}
+
+@keyframes coinSpin {
+    from {
+        transform: rotateY(0deg);
+    }
+    to {
+        transform: rotateY(360deg);
+    }
+}
+
+@keyframes coinFloat {
+    0%,
+    100% {
+        margin-top: 0;
+    }
+    50% {
+        margin-top: -5px;
+    }
+}
+
+
+/* =========================================================
+   LETTERS
+   ========================================================= */
+
+.letter {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 13px;
+    color: white;
+    font-size: 22px;
+    font-weight: 950;
+    background: linear-gradient( 145deg, #38bdf8, #2563eb);
+    border: 2px solid rgba( 255, 255, 255, 0.75);
+    box-shadow: 0 0 18px rgba( 37, 99, 235, 0.8);
+    animation: letterPulse 0.9s ease-in-out infinite;
+    z-index: 18;
+    pointer-events: none;
+    user-select: none;
+}
+
+@keyframes letterPulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+}
+
+
+/* =========================================================
+   WORD CHALLENGE
+   ========================================================= */
+
+.wordChallenge {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min( 320px, 72%);
+    padding: 8px 14px;
+    text-align: center;
+    border-radius: 15px;
+    background: rgba( 2, 6, 23, 0.96);
+    border: 1px solid rgba( 56, 189, 248, 0.45);
+    box-shadow: 0 8px 25px rgba( 0, 0, 0, 0.55), 0 0 20px rgba( 56, 189, 248, 0.12);
+    backdrop-filter: blur(12px);
+    z-index: 80;
+    pointer-events: none;
+}
+
+.wordTitle {
+    color: #38bdf8;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: 3px;
+    margin-bottom: 3px;
+}
+
+.wordDisplay {
+    min-height: 27px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    font-size: 19px;
+    font-weight: 950;
+    letter-spacing: 5px;
+}
+
+.wordChallenge small {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 7px;
+    letter-spacing: 1px;
+}
+
+.collected-letter {
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba( 56, 189, 248, 0.8);
+}
+
+
+/* =========================================================
+   HIDDEN
+   ========================================================= */
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =========================================================
+   SPEED EFFECT
+   ========================================================= */
+
+#speedEffect {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    background: linear-gradient( 90deg, transparent, rgba( 56, 189, 248, 0.08), transparent);
+}
+
+#speedEffect.active {
+    opacity: 1;
+    animation: speedFlash 0.35s linear infinite;
+}
+
+@keyframes speedFlash {
+    from {
+        transform: translateX(-20%);
+    }
+    to {
+        transform: translateX(20%);
+    }
+}
+
+
+/* =========================================================
+   OVERLAY
+   ========================================================= */
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba( 2, 6, 23, 0.76);
+    backdrop-filter: blur(9px);
+}
+
+.overlayCard {
+    width: min( 390px, 92%);
+    padding: 30px 25px;
+    text-align: center;
+    border-radius: 25px;
+    background: linear-gradient( 145deg, rgba( 30, 41, 59, 0.98), rgba( 15, 23, 42, 0.98));
+    border: 1px solid rgba( 56, 189, 248, 0.25);
+    box-shadow: 0 30px 70px rgba( 0, 0, 0, 0.65);
+}
+
+.raceIcon,
+.pauseIcon,
+.crashIcon {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+.overlayCard h2 {
+    font-size: 27px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+}
+
+.overlayCard p {
+    color: #94a3b8;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   QUICK CONTROLS
+   ========================================================= */
+
+.quickControls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 18px 0;
+}
+
+.quickControls span {
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba( 255, 255, 255, 0.06);
+    color: #cbd5e1;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   BUTTON
+   ========================================================= */
+
+.mainButton {
+    border: none;
+    padding: 14px 25px;
+    border-radius: 13px;
+    cursor: pointer;
+    color: white;
+    font-size: 13px;
+    font-weight: 950;
+    letter-spacing: 1px;
+    background: linear-gradient( 135deg, #0ea5e9, #2563eb);
+    box-shadow: 0 10px 25px rgba( 37, 99, 235, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mainButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba( 37, 99, 235, 0.55);
+}
+
+.mainButton:active {
+    transform: translateY(1px);
+}
+
+
+/* =========================================================
+   GAME CONTROLS
+   ========================================================= */
+
+.gameControls {
+    width: min( 650px, 100%);
+    margin: 18px auto 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.centerControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.controlButton,
+.pauseButton {
+    border: 1px solid rgba( 255, 255, 255, 0.1);
+    color: white;
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    background: linear-gradient( 145deg, #1e293b, #0f172a);
+    box-shadow: 0 8px 20px rgba( 0, 0, 0, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.controlButton:active,
+.pauseButton:active {
+    transform: scale(0.94);
+}
+
+.controlButton {
+    width: 84px;
+    height: 70px;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+}
+
+.controlButton span {
+    font-size: 23px;
+}
+
+.controlButton small {
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    font-weight: 950;
+}
+
+.directionButton {
+    border-color: rgba( 56, 189, 248, 0.3);
+}
+
+.accelerator {
+    border-color: rgba( 34, 197, 94, 0.35);
+}
+
+.brake {
+    border-color: rgba( 239, 68, 68, 0.35);
+}
+
+.pauseButton {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   CONTROL INFO
+   ========================================================= */
+
+.controlInfo {
+    width: min( 800px, 100%);
+    margin: 20px auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.controlItem {
+    min-height: 60px;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    column-gap: 5px;
+    align-items: center;
+    border-radius: 13px;
+    background: rgba( 15, 23, 42, 0.72);
+    border: 1px solid rgba( 148, 163, 184, 0.08);
+}
+
+.controlItem>span:first-child {
+    grid-row: span 2;
+    font-size: 18px;
+}
+
+.controlItem b {
+    font-size: 10px;
+}
+
+.controlItem small {
+    color: #64748b;
+    font-size: 8px;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+footer {
+    text-align: center;
+    margin-top: 15px;
+    color: #475569;
+    font-size: 9px;
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   RESPONSIVE - TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+    .gameLayout {
+        grid-template-columns: 105px minmax(300px, 500px) 105px;
+        gap: 12px;
+    }
+    .sideBoard {
+        width: 105px;
+    }
+    .statCard {
+        min-height: 110px;
+        padding: 12px 6px;
+    }
+    .statIcon {
+        font-size: 22px;
+    }
+    .statCard strong {
+        font-size: 20px;
+    }
+    .gameArea {
+        height: 650px;
+    }
+}
+
+
+/* =========================================================
+   RESPONSIVE - MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+    .container {
+        width: 100%;
+        padding: 10px 8px 22px;
+    }
+    .header {
+        margin-bottom: 12px;
+    }
+    .logo {
+        width: 45px;
+        height: 45px;
+        font-size: 25px;
+    }
+    .brand-text h1 {
+        font-size: 21px;
+        letter-spacing: 2px;
+    }
+    .brand-text p {
+        font-size: 7px;
+        letter-spacing: 2px;
+    }
+    /* Dashboard */
+    .gameLayout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "left right" "game game";
+        gap: 8px;
+    }
+    .leftBoard {
+        grid-area: left;
+        flex-direction: row;
+        width: 100%;
+    }
+    .rightBoard {
+        grid-area: right;
+        flex-direction: row;
+        width: 100%;
+    }
+    .sideBoard {
+        gap: 7px;
+    }
+    .statCard {
+        width: 100%;
+        min-height: 65px;
+        padding: 7px;
+        border-radius: 13px;
+        flex-direction: row;
+        gap: 6px;
+    }
+    .statIcon {
+        font-size: 17px;
+        margin: 0;
+    }
+    .statCard .label {
+        font-size: 6px;
+    }
+    .statCard strong {
+        margin: 0;
+        font-size: 15px;
+    }
+    .speedCard small {
+        display: inline;
+        font-size: 6px;
+    }
+    /* Game */
+    .gameArea {
+        grid-area: game;
+        width: 100%;
+        height: min( 70vh, 620px);
+        min-height: 440px;
+        border-radius: 21px;
+        border-width: 2px;
+    }
+    .leftEdge {
+        left: 25px;
+    }
+    .rightEdge {
+        right: 25px;
+    }
+    .roadGlow {
+        width: 50px;
+    }
+    .playerWrapper {
+        bottom: 25px;
+    }
+    .playerCar {
+        width: 60px;
+    }
+    .enemyCar {
+        width: 57px;
+    }
+    /* Letters */
+    .letter {
+        width: 42px;
+        height: 42px;
+        font-size: 19px;
+        border-radius: 11px;
+    }
+    .coin {
+        width: 34px;
+        height: 34px;
+        font-size: 26px;
+    }
+    /* Word */
+    .wordChallenge {
+        top: 8px;
+        width: min( 250px, 78%);
+        padding: 6px 8px;
+        border-radius: 12px;
+    }
+    .wordTitle {
+        font-size: 7px;
+        letter-spacing: 2px;
+        margin-bottom: 2px;
+    }
+    .wordDisplay {
+        font-size: 15px;
+        letter-spacing: 3px;
+        min-height: 23px;
+        gap: 5px;
+    }
+    .wordChallenge small {
+        font-size: 6px;
+        margin-top: 2px;
+    }
+    /* Controls */
+    .gameControls {
+        margin-top: 10px;
+        gap: 5px;
+    }
+    .centerControls {
+        gap: 5px;
+    }
+    .controlButton {
+        width: 68px;
+        height: 59px;
+        border-radius: 15px;
+    }
+    .controlButton span {
+        font-size: 19px;
+    }
+    .pauseButton {
+        width: 46px;
+        height: 46px;
+        font-size: 17px;
+    }
+    /* Info */
+    .controlInfo {
+        margin-top: 14px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 7px;
+    }
+    .controlItem {
+        min-height: 50px;
+        padding: 7px;
+    }
+    .controlItem b {
+        font-size: 8px;
+    }
+    .controlItem small {
+        font-size: 7px;
+    }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 380px) {
+    .gameArea {
+        min-height: 410px;
+        height: 63vh;
+    }
+    .playerCar {
+        width: 55px;
+    }
+    .enemyCar {
+        width: 53px;
+    }
+    .letter {
+        width: 38px;
+        height: 38px;
+        font-size: 17px;
+    }
+    .controlButton {
+        width: 59px;
+        height: 53px;
+    }
+    .pauseButton {
+        width: 42px;
+        height: 42px;
+    }
+    .statCard strong {
+        font-size: 13px;
+    }
+    .statIcon {
+        font-size: 14px;
+    }
+    .wordChallenge {
+        top: 6px;
+        width: 80%;
+        padding: 5px 7px;
+    }
+    .wordDisplay {
+        font-size: 14px;
+        letter-spacing: 2px;
+    }
+}
+
+
+/* =========================================================
+   TOUCH
+   ========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+    button {
+        -webkit-tap-highlight-color: transparent;
+    }
+    .statCard:hover {
+        transform: none;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
