@@ -1,6 +1,43 @@
 /* =========================================================
-   STREET RACER - REACT APP CSS
-   ========================================================= */
+   STREET RACER - REACT APP CSS (RESPONSIVE)
+   ========================================================== */
+
+
+/* ---------- 1. DESIGN TOKENS ---------- */
+
+:root {
+    /* Colors */
+    --c-bg: #020617;
+    --c-card: #1e293b;
+    --c-card-dark: #0f172a;
+    --c-accent: #38bdf8;
+    --c-accent-strong: #0ea5e9;
+    --c-accent-deep: #2563eb;
+    --c-gold: #facc15;
+    --c-green: #22c55e;
+    --c-red: #ef4444;
+    --c-text: #f8fafc;
+    --c-muted: #64748b;
+    --c-muted-2: #94a3b8;
+    /* Radii */
+    --r-sm: 10px;
+    --r-md: 16px;
+    --r-lg: 22px;
+    --r-xl: 28px;
+    /* Layout */
+    --container-max: 1250px;
+    --side-col: clamp(90px, 12vw, 145px);
+    --game-col: clamp(300px, 42vw, 520px);
+    --gap: clamp(10px, 2vw, 22px);
+    /* Fluid type */
+    --fs-title: clamp(20px, 5vw, 40px);
+    --fs-subtitle: clamp(7px, 1.6vw, 9px);
+    --fs-stat: clamp(15px, 2.4vw, 25px);
+    --fs-label: clamp(8px, 1.2vw, 9px);
+}
+
+
+/* ---------- 2. RESET + BASE ---------- */
 
 * {
     margin: 0;
@@ -18,34 +55,31 @@ body,
 body {
     font-family: "Segoe UI", Arial, sans-serif;
     color: white;
-    background: radial-gradient( circle at 50% -10%, #123b63 0%, #071426 30%, #020617 65%, #000 100%);
+    background: radial-gradient(circle at 50% -10%, #123b63 0%, #071426 30%, #020617 65%, #000 100%);
     overflow-x: hidden;
+    /* Notch / home-indicator safe padding */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
-
-
-/* =========================================================
-   ROOT
-   ========================================================= */
 
 #root {
     min-height: 100vh;
+    min-height: 100dvh;
+    min-height: 100svh;
+    /* small-viewport fallback for mobile URL bar */
 }
 
 
-/* =========================================================
-   CONTAINER
-   ========================================================= */
+/* ---------- 3. CONTAINER ---------- */
 
 .container {
-    width: min(1250px, 96%);
+    width: min(var(--container-max), 96%);
     margin: auto;
     padding: 18px 0 30px;
+    padding-bottom: calc(30px + env(safe-area-inset-bottom));
 }
 
 
-/* =========================================================
-   HEADER
-   ========================================================= */
+/* ---------- 4. HEADER ---------- */
 
 .header {
     display: flex;
@@ -53,27 +87,30 @@ body {
     align-items: center;
     gap: 14px;
     margin-bottom: 18px;
+    flex-wrap: wrap;
+    text-align: center;
 }
 
 .logo {
-    width: 55px;
-    height: 55px;
+    width: clamp(45px, 6vw, 55px);
+    height: clamp(45px, 6vw, 55px);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
-    border-radius: 16px;
-    background: linear-gradient( 145deg, #1e293b, #0f172a);
+    font-size: clamp(25px, 3.4vw, 30px);
+    border-radius: var(--r-md);
+    background: linear-gradient(145deg, var(--c-card), var(--c-card-dark));
     border: 1px solid rgba(56, 189, 248, 0.3);
     box-shadow: 0 0 25px rgba(14, 165, 233, 0.18);
+    flex-shrink: 0;
 }
 
 .brand-text h1 {
-    font-size: clamp(24px, 4vw, 40px);
-    letter-spacing: 4px;
+    font-size: var(--fs-title);
+    letter-spacing: clamp(1px, 0.6vw, 4px);
     line-height: 1;
     font-weight: 950;
-    background: linear-gradient( 90deg, #ffffff, #7dd3fc, #38bdf8);
+    background: linear-gradient(90deg, #fff, #7dd3fc, var(--c-accent));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -81,165 +118,159 @@ body {
 
 .brand-text p {
     margin-top: 6px;
-    color: #64748b;
-    font-size: 9px;
+    color: var(--c-muted);
+    font-size: var(--fs-subtitle);
     letter-spacing: 5px;
     font-weight: 800;
 }
 
 
-/* =========================================================
-   GAME LAYOUT
-   ========================================================= */
+/* ---------- 5. GAME LAYOUT (container-query driven) ---------- */
 
 .gameLayout {
     display: grid;
-    grid-template-columns: 145px minmax(350px, 520px) 145px;
+    grid-template-columns: var(--side-col) var(--game-col) var(--side-col);
     justify-content: center;
     align-items: center;
-    gap: 22px;
+    gap: var(--gap);
     width: 100%;
+    container-type: inline-size;
+    /* enables @container queries below */
 }
 
 
-/* =========================================================
-   SIDE DASHBOARD
-   ========================================================= */
+/* SIDE DASHBOARD */
 
 .sideBoard {
     display: flex;
     flex-direction: column;
     gap: 18px;
-    width: 145px;
+    width: 100%;
+    min-width: 0;
 }
 
 .statCard {
-    min-height: 135px;
+    min-height: clamp(110px, 16vh, 135px);
     padding: 18px 12px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    border-radius: 22px;
-    background: linear-gradient( 145deg, rgba(30, 41, 59, 0.96), rgba(2, 6, 23, 0.96));
-    border: 1px solid rgba( 56, 189, 248, 0.18);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba( 56, 189, 248, 0.025);
+    border-radius: var(--r-lg);
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.96), rgba(2, 6, 23, 0.96));
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(56, 189, 248, 0.025);
+    -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .statCard:hover {
     transform: translateY(-4px);
-    border-color: rgba( 56, 189, 248, 0.45);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba( 56, 189, 248, 0.08);
+    border-color: rgba(56, 189, 248, 0.45);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(56, 189, 248, 0.08);
 }
 
 .statIcon {
-    font-size: 27px;
+    font-size: clamp(17px, 2.6vw, 27px);
     margin-bottom: 8px;
 }
 
 .statCard .label {
-    color: #64748b;
-    font-size: 9px;
+    color: var(--c-muted);
+    font-size: var(--fs-label);
     letter-spacing: 2px;
     font-weight: 900;
 }
 
 .statCard strong {
     margin-top: 5px;
-    font-size: 25px;
-    color: #f8fafc;
+    font-size: var(--fs-stat);
+    color: var(--c-text);
     font-weight: 950;
 }
 
 .coinCard strong {
-    color: #facc15;
-    text-shadow: 0 0 12px rgba( 250, 204, 21, 0.45);
+    color: var(--c-gold);
+    text-shadow: 0 0 12px rgba(250, 204, 21, 0.45);
 }
 
 .speedCard strong {
-    color: #38bdf8;
+    color: var(--c-accent);
 }
 
 .speedCard small {
     display: block;
     margin-top: 2px;
-    color: #64748b;
-    font-size: 7px;
+    color: var(--c-muted);
+    font-size: clamp(6px, 1vw, 7px);
     letter-spacing: 1px;
 }
 
 
-/* =========================================================
-   GAME AREA
-   ========================================================= */
+/* GAME AREA */
 
 .gameArea {
     position: relative;
     width: 100%;
-    height: clamp( 520px, 72vh, 720px);
+    height: clamp(480px, 72vh, 720px);
+    height: clamp(480px, 72dvh, 720px);
+    height: clamp(480px, 72svh, 720px);
     overflow: hidden;
-    border-radius: 28px;
+    border-radius: var(--r-xl);
     border: 3px solid #334155;
-    background: linear-gradient( 90deg, #0f172a 0%, #1e293b 5%, #252525 8%, #242424 50%, #252525 92%, #1e293b 95%, #0f172a 100%);
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), 0 0 45px rgba( 14, 165, 233, 0.12);
+    background: linear-gradient(90deg, #0f172a 0%, #1e293b 5%, #252525 8%, #242424 50%, #252525 92%, #1e293b 95%, #0f172a 100%);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), 0 0 45px rgba(14, 165, 233, 0.12);
     isolation: isolate;
 }
 
 
-/* =========================================================
-   ROAD GLOW
-   ========================================================= */
+/* ROAD GLOW */
 
 .roadGlow {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 70px;
+    width: clamp(50px, 6vw, 70px);
     pointer-events: none;
     z-index: 1;
 }
 
 .leftGlow {
     left: 0;
-    background: linear-gradient( 90deg, rgba(14, 165, 233, 0.16), transparent);
+    background: linear-gradient(90deg, rgba(14, 165, 233, 0.16), transparent);
 }
 
 .rightGlow {
     right: 0;
-    background: linear-gradient( 270deg, rgba(14, 165, 233, 0.16), transparent);
+    background: linear-gradient(270deg, rgba(14, 165, 233, 0.16), transparent);
 }
 
 
-/* =========================================================
-   ROAD EDGES
-   ========================================================= */
+/* ROAD EDGES */
 
 .roadEdge {
     position: absolute;
     top: 0;
     bottom: 0;
     width: 4px;
-    background: linear-gradient( to bottom, #38bdf8, #0ea5e9, #38bdf8);
-    box-shadow: 0 0 12px rgba( 56, 189, 248, 0.9);
+    background: linear-gradient(to bottom, var(--c-accent), var(--c-accent-strong), var(--c-accent));
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
     z-index: 3;
     pointer-events: none;
 }
 
 .leftEdge {
-    left: 42px;
+    left: clamp(25px, 4vw, 42px);
 }
 
 .rightEdge {
-    right: 42px;
+    right: clamp(25px, 4vw, 42px);
 }
 
 
-/* =========================================================
-   ROAD LINES
-   ========================================================= */
+/* ROAD LINES */
 
 .roadLine {
     position: absolute;
@@ -247,8 +278,8 @@ body {
     width: 5px;
     height: 115px;
     border-radius: 10px;
-    background: rgba( 255, 255, 255, 0.72);
-    box-shadow: 0 0 9px rgba( 255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 0 9px rgba(255, 255, 255, 0.25);
     z-index: 2;
     pointer-events: none;
     animation: roadMove 0.9s linear infinite;
@@ -285,16 +316,14 @@ body {
 }
 
 
-/* =========================================================
-   PLAYER CAR
-   ========================================================= */
+/* PLAYER CAR */
 
 .playerWrapper {
     position: absolute;
     left: 0;
-    bottom: 30px;
+    bottom: clamp(25px, 3vh, 30px);
     width: 100%;
-    height: 125px;
+    height: clamp(100px, 14vh, 125px);
     z-index: 12;
     pointer-events: none;
 }
@@ -302,36 +331,32 @@ body {
 .playerCar {
     position: absolute;
     bottom: 0;
-    width: 76px;
+    width: clamp(50px, 7vw, 76px);
     height: auto;
     object-fit: contain;
     transform-origin: center;
-    filter: drop-shadow( 0 10px 9px rgba( 0, 0, 0, 0.65));
+    filter: drop-shadow(0 10px 9px rgba(0, 0, 0, 0.65));
     z-index: 13;
     user-select: none;
 }
 
 
-/* =========================================================
-   ENEMY CARS
-   ========================================================= */
+/* ENEMY CARS */
 
 .enemyCar {
     position: absolute;
     top: -180px;
-    width: 70px;
+    width: clamp(48px, 6.5vw, 70px);
     height: auto;
     object-fit: contain;
     z-index: 8;
     pointer-events: none;
-    filter: drop-shadow( 0 8px 8px rgba( 0, 0, 0, 0.65));
+    filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.65));
     user-select: none;
 }
 
 
-/* =========================================================
-   COLLECTIBLES
-   ========================================================= */
+/* COLLECTIBLES */
 
 #coinContainer,
 #letterContainer {
@@ -351,18 +376,16 @@ body {
 }
 
 
-/* =========================================================
-   COINS
-   ========================================================= */
+/* COINS */
 
 .coin {
     position: absolute;
-    width: 38px;
-    height: 38px;
+    width: clamp(30px, 4vw, 38px);
+    height: clamp(30px, 4vw, 38px);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 29px;
+    font-size: clamp(22px, 3vw, 29px);
     animation: coinSpin 0.8s linear infinite, coinFloat 1.1s ease-in-out infinite;
     z-index: 16;
     pointer-events: none;
@@ -388,24 +411,22 @@ body {
 }
 
 
-/* =========================================================
-   LETTERS
-   ========================================================= */
+/* LETTERS */
 
 .letter {
     position: absolute;
-    width: 48px;
-    height: 48px;
+    width: clamp(34px, 4.5vw, 48px);
+    height: clamp(34px, 4.5vw, 48px);
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 13px;
+    border-radius: clamp(11px, 1.4vw, 13px);
     color: white;
-    font-size: 22px;
+    font-size: clamp(15px, 2.2vw, 22px);
     font-weight: 950;
-    background: linear-gradient( 145deg, #38bdf8, #2563eb);
-    border: 2px solid rgba( 255, 255, 255, 0.75);
-    box-shadow: 0 0 18px rgba( 37, 99, 235, 0.8);
+    background: linear-gradient(145deg, var(--c-accent), var(--c-accent-deep));
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 0 18px rgba(37, 99, 235, 0.8);
     animation: letterPulse 0.9s ease-in-out infinite;
     z-index: 18;
     pointer-events: none;
@@ -423,72 +444,137 @@ body {
 }
 
 
-/* =========================================================
-   WORD CHALLENGE
-   ========================================================= */
+/* LETTER COLLECTOR - TOP GAME HUD */
 
-.wordChallenge {
+.letterCollector {
+    width: min(760px, 100%);
+    margin: 0 auto 18px;
+    padding: clamp(12px, 2vw, 18px) clamp(14px, 3vw, 24px);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: clamp(12px, 2vw, 24px);
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.90));
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35), 0 0 30px rgba(56, 189, 248, 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.letterCollector::before {
+    content: "";
     position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min( 320px, 72%);
-    padding: 8px 14px;
-    text-align: center;
-    border-radius: 15px;
-    background: rgba( 2, 6, 23, 0.96);
-    border: 1px solid rgba( 56, 189, 248, 0.45);
-    box-shadow: 0 8px 25px rgba( 0, 0, 0, 0.55), 0 0 20px rgba( 56, 189, 248, 0.12);
-    backdrop-filter: blur(12px);
-    z-index: 80;
+    width: 220px;
+    height: 220px;
+    top: -130px;
+    left: -70px;
+    border-radius: 50%;
+    background: rgba(56, 189, 248, 0.12);
+    filter: blur(45px);
     pointer-events: none;
 }
 
-.wordTitle {
-    color: #38bdf8;
-    font-size: 8px;
+.collectorHeader {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.collectorIcon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 23px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(56, 189, 248, 0.22), rgba(37, 99, 235, 0.25));
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.12);
+}
+
+.collectorText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.collectorLabel {
+    color: var(--c-accent);
+    font-size: clamp(9px, 1.3vw, 12px);
     font-weight: 950;
-    letter-spacing: 3px;
-    margin-bottom: 3px;
+    letter-spacing: 2px;
+}
+
+.collectorHint {
+    color: var(--c-muted-2);
+    font-size: clamp(7px, 1vw, 9px);
+    line-height: 1.4;
 }
 
 .wordDisplay {
-    min-height: 27px;
+    position: relative;
+    z-index: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 7px;
-    font-size: 19px;
-    font-weight: 950;
-    letter-spacing: 5px;
+    flex-wrap: wrap;
+    gap: clamp(6px, 1vw, 10px);
 }
 
-.wordChallenge small {
-    display: block;
-    margin-top: 3px;
+.wordDisplay span {
+    width: clamp(34px, 4.5vw, 48px);
+    height: clamp(38px, 5vw, 54px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    font-size: clamp(16px, 2.3vw, 23px);
+    font-weight: 950;
+    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pending-letter {
     color: #64748b;
-    font-size: 7px;
-    letter-spacing: 1px;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.9));
+    border: 1px solid rgba(100, 116, 139, 0.35);
 }
 
 .collected-letter {
-    color: #38bdf8;
-    text-shadow: 0 0 10px rgba( 56, 189, 248, 0.8);
+    color: white;
+    background: linear-gradient(145deg, var(--c-accent), var(--c-accent-deep));
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
+    transform: translateY(-2px);
 }
 
-
-/* =========================================================
-   HIDDEN
-   ========================================================= */
+.collectorProgress {
+    position: relative;
+    z-index: 1;
+    padding: 9px 12px;
+    white-space: nowrap;
+    border-radius: 10px;
+    color: var(--c-green);
+    font-size: clamp(7px, 1vw, 9px);
+    font-weight: 900;
+    letter-spacing: 1px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
 
 .hidden {
     display: none !important;
 }
 
 
-/* =========================================================
-   SPEED EFFECT
-   ========================================================= */
+/* SPEED EFFECT */
 
 #speedEffect {
     position: absolute;
@@ -496,7 +582,7 @@ body {
     pointer-events: none;
     z-index: 20;
     opacity: 0;
-    background: linear-gradient( 90deg, transparent, rgba( 56, 189, 248, 0.08), transparent);
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.08), transparent);
 }
 
 #speedEffect.active {
@@ -514,9 +600,7 @@ body {
 }
 
 
-/* =========================================================
-   OVERLAY
-   ========================================================= */
+/* OVERLAY */
 
 .overlay {
     position: absolute;
@@ -526,43 +610,45 @@ body {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba( 2, 6, 23, 0.76);
+    background: rgba(2, 6, 23, 0.76);
+    -webkit-backdrop-filter: blur(9px);
     backdrop-filter: blur(9px);
 }
 
 .overlayCard {
-    width: min( 390px, 92%);
-    padding: 30px 25px;
+    width: min(390px, 92%);
+    padding: clamp(20px, 4vh, 30px) clamp(16px, 3vw, 25px);
     text-align: center;
     border-radius: 25px;
-    background: linear-gradient( 145deg, rgba( 30, 41, 59, 0.98), rgba( 15, 23, 42, 0.98));
-    border: 1px solid rgba( 56, 189, 248, 0.25);
-    box-shadow: 0 30px 70px rgba( 0, 0, 0, 0.65);
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65);
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
 }
 
 .raceIcon,
 .pauseIcon,
 .crashIcon {
-    font-size: 50px;
+    font-size: clamp(38px, 6vw, 50px);
     margin-bottom: 10px;
 }
 
 .overlayCard h2 {
-    font-size: 27px;
+    font-size: clamp(20px, 5vw, 27px);
     letter-spacing: 3px;
     margin-bottom: 10px;
 }
 
 .overlayCard p {
-    color: #94a3b8;
+    color: var(--c-muted-2);
     line-height: 1.6;
     font-size: 14px;
 }
 
 
-/* =========================================================
-   QUICK CONTROLS
-   ========================================================= */
+/* QUICK CONTROLS */
 
 .quickControls {
     display: flex;
@@ -575,16 +661,14 @@ body {
 .quickControls span {
     padding: 7px 10px;
     border-radius: 8px;
-    background: rgba( 255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.06);
     color: #cbd5e1;
     font-size: 9px;
     font-weight: 800;
 }
 
 
-/* =========================================================
-   BUTTON
-   ========================================================= */
+/* BUTTON */
 
 .mainButton {
     border: none;
@@ -595,14 +679,14 @@ body {
     font-size: 13px;
     font-weight: 950;
     letter-spacing: 1px;
-    background: linear-gradient( 135deg, #0ea5e9, #2563eb);
-    box-shadow: 0 10px 25px rgba( 37, 99, 235, 0.4);
+    background: linear-gradient(135deg, var(--c-accent-strong), var(--c-accent-deep));
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mainButton:hover {
     transform: translateY(-2px);
-    box-shadow: 0 14px 30px rgba( 37, 99, 235, 0.55);
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.55);
 }
 
 .mainButton:active {
@@ -610,34 +694,35 @@ body {
 }
 
 
-/* =========================================================
-   GAME CONTROLS
-   ========================================================= */
+/* GAME CONTROLS */
 
 .gameControls {
-    width: min( 650px, 100%);
+    width: min(650px, 100%);
     margin: 18px auto 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .centerControls {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .controlButton,
 .pauseButton {
-    border: 1px solid rgba( 255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
     cursor: pointer;
     user-select: none;
     touch-action: none;
-    background: linear-gradient( 145deg, #1e293b, #0f172a);
-    box-shadow: 0 8px 20px rgba( 0, 0, 0, 0.35);
+    background: linear-gradient(145deg, var(--c-card), var(--c-card-dark));
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -647,9 +732,9 @@ body {
 }
 
 .controlButton {
-    width: 84px;
-    height: 70px;
-    border-radius: 18px;
+    width: clamp(54px, 8vw, 84px);
+    height: clamp(48px, 8vh, 70px);
+    border-radius: clamp(15px, 2vw, 18px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -658,45 +743,44 @@ body {
 }
 
 .controlButton span {
-    font-size: 23px;
+    font-size: clamp(16px, 2.4vw, 23px);
 }
 
 .controlButton small {
-    font-size: 8px;
+    font-size: clamp(7px, 1vw, 8px);
     letter-spacing: 1px;
-    color: #94a3b8;
+    color: var(--c-muted-2);
     font-weight: 950;
 }
 
 .directionButton {
-    border-color: rgba( 56, 189, 248, 0.3);
+    border-color: rgba(56, 189, 248, 0.3);
 }
 
 .accelerator {
-    border-color: rgba( 34, 197, 94, 0.35);
+    border-color: rgba(34, 197, 94, 0.35);
 }
 
 .brake {
-    border-color: rgba( 239, 68, 68, 0.35);
+    border-color: rgba(239, 68, 68, 0.35);
 }
 
 .pauseButton {
-    width: 56px;
-    height: 56px;
+    width: clamp(40px, 6vw, 56px);
+    height: clamp(40px, 6vw, 56px);
     border-radius: 50%;
-    font-size: 20px;
+    font-size: clamp(15px, 2.2vw, 20px);
+    flex-shrink: 0;
 }
 
 
-/* =========================================================
-   CONTROL INFO
-   ========================================================= */
+/* CONTROL INFO */
 
 .controlInfo {
-    width: min( 800px, 100%);
+    width: min(800px, 100%);
     margin: 20px auto;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 10px;
 }
 
@@ -708,8 +792,9 @@ body {
     column-gap: 5px;
     align-items: center;
     border-radius: 13px;
-    background: rgba( 15, 23, 42, 0.72);
-    border: 1px solid rgba( 148, 163, 184, 0.08);
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    min-width: 0;
 }
 
 .controlItem>span:first-child {
@@ -722,14 +807,12 @@ body {
 }
 
 .controlItem small {
-    color: #64748b;
+    color: var(--c-muted);
     font-size: 8px;
 }
 
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
+/* FOOTER */
 
 footer {
     text-align: center;
@@ -741,78 +824,35 @@ footer {
     justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 
 /* =========================================================
-   RESPONSIVE - TABLET
-   ========================================================= */
+   CONTAINER QUERIES (adapt to the game layout's own width)
+   ========================================================== */
 
-@media (max-width: 900px) {
+
+/* Narrow container (< 700px): stack dashboards above/below the game */
+
+@container (max-width: 700px) {
     .gameLayout {
-        grid-template-columns: 105px minmax(300px, 500px) 105px;
-        gap: 12px;
-    }
-    .sideBoard {
-        width: 105px;
-    }
-    .statCard {
-        min-height: 110px;
-        padding: 12px 6px;
-    }
-    .statIcon {
-        font-size: 22px;
-    }
-    .statCard strong {
-        font-size: 20px;
-    }
-    .gameArea {
-        height: 650px;
-    }
-}
-
-
-/* =========================================================
-   RESPONSIVE - MOBILE
-   ========================================================= */
-
-@media (max-width: 700px) {
-    .container {
-        width: 100%;
-        padding: 10px 8px 22px;
-    }
-    .header {
-        margin-bottom: 12px;
-    }
-    .logo {
-        width: 45px;
-        height: 45px;
-        font-size: 25px;
-    }
-    .brand-text h1 {
-        font-size: 21px;
-        letter-spacing: 2px;
-    }
-    .brand-text p {
-        font-size: 7px;
-        letter-spacing: 2px;
-    }
-    /* Dashboard */
-    .gameLayout {
-        display: grid;
         grid-template-columns: 1fr 1fr;
         grid-template-areas: "left right" "game game";
         gap: 8px;
     }
-    .leftBoard {
+    .gameLayout>.sideBoard:first-of-type {
         grid-area: left;
         flex-direction: row;
         width: 100%;
     }
-    .rightBoard {
+    .gameLayout>.sideBoard:last-of-type {
         grid-area: right;
         flex-direction: row;
         width: 100%;
+    }
+    .gameArea {
+        grid-area: game;
     }
     .sideBoard {
         gap: 7px;
@@ -840,11 +880,96 @@ footer {
         display: inline;
         font-size: 6px;
     }
-    /* Game */
+}
+
+
+/* Very narrow container (< 480px): single-column stats */
+
+@container (max-width: 480px) {
+    .gameLayout {
+        grid-template-columns: 1fr;
+        grid-template-areas: "left" "game" "right";
+    }
+    .gameLayout>.sideBoard {
+        flex-direction: row;
+    }
+    .gameLayout>.sideBoard:first-of-type {
+        grid-area: left;
+    }
+    .gameLayout>.sideBoard:last-of-type {
+        grid-area: right;
+    }
+}
+
+
+/* =========================================================
+   VIEWPORT BREAKPOINTS
+   ========================================================== */
+
+
+/* Large tablet */
+
+@media (max-width: 1000px) {
+    .gameLayout {
+        grid-template-columns: 120px minmax(300px, 520px) 120px;
+    }
+}
+
+
+/* Tablet */
+
+@media (max-width: 900px) {
+    .gameLayout {
+        grid-template-columns: 105px minmax(300px, 500px) 105px;
+        gap: 12px;
+    }
+    .sideBoard {
+        width: 105px;
+    }
+    .statCard {
+        min-height: 110px;
+        padding: 12px 6px;
+    }
+    .statIcon {
+        font-size: 22px;
+    }
+    .statCard strong {
+        font-size: 20px;
+    }
     .gameArea {
-        grid-area: game;
+        height: 650px;
+    }
+}
+
+
+/* Mobile */
+
+@media (max-width: 700px) {
+    .container {
         width: 100%;
-        height: min( 70vh, 620px);
+        padding: 10px 8px 22px;
+    }
+    .header {
+        margin-bottom: 12px;
+    }
+    .logo {
+        width: 45px;
+        height: 45px;
+        font-size: 25px;
+    }
+    .brand-text h1 {
+        font-size: 21px;
+        letter-spacing: 2px;
+    }
+    .brand-text p {
+        font-size: 7px;
+        letter-spacing: 2px;
+    }
+    .gameArea {
+        width: 100%;
+        height: min(70vh, 620px);
+        height: min(70dvh, 620px);
+        height: min(70svh, 620px);
         min-height: 440px;
         border-radius: 21px;
         border-width: 2px;
@@ -867,7 +992,6 @@ footer {
     .enemyCar {
         width: 57px;
     }
-    /* Letters */
     .letter {
         width: 42px;
         height: 42px;
@@ -879,29 +1003,36 @@ footer {
         height: 34px;
         font-size: 26px;
     }
-    /* Word */
-    .wordChallenge {
-        top: 8px;
-        width: min( 250px, 78%);
-        padding: 6px 8px;
+    .letterCollector {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 10px;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+    }
+    .collectorHeader {
+        grid-column: 1 / -1;
+    }
+    .collectorIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 19px;
         border-radius: 12px;
     }
-    .wordTitle {
-        font-size: 7px;
-        letter-spacing: 2px;
-        margin-bottom: 2px;
-    }
     .wordDisplay {
-        font-size: 15px;
-        letter-spacing: 3px;
-        min-height: 23px;
+        justify-content: flex-start;
         gap: 5px;
     }
-    .wordChallenge small {
-        font-size: 6px;
-        margin-top: 2px;
+    .wordDisplay span {
+        width: 35px;
+        height: 40px;
+        border-radius: 10px;
+        font-size: 17px;
     }
-    /* Controls */
+    .collectorProgress {
+        padding: 7px 8px;
+        font-size: 7px;
+    }
     .gameControls {
         margin-top: 10px;
         gap: 5px;
@@ -922,7 +1053,6 @@ footer {
         height: 46px;
         font-size: 17px;
     }
-    /* Info */
     .controlInfo {
         margin-top: 14px;
         grid-template-columns: repeat(2, 1fr);
@@ -941,33 +1071,45 @@ footer {
 }
 
 
-/* =========================================================
-   SMALL PHONES
-   ========================================================= */
+/* Small phones */
 
 @media (max-width: 380px) {
     .gameArea {
-        min-height: 410px;
-        height: 63vh;
+        min-height: 380px;
+        height: 60vh;
+        height: 60dvh;
+        height: 60svh;
     }
     .playerCar {
-        width: 55px;
+        width: 50px;
     }
     .enemyCar {
-        width: 53px;
+        width: 48px;
     }
     .letter {
-        width: 38px;
-        height: 38px;
-        font-size: 17px;
+        width: 34px;
+        height: 34px;
+        font-size: 15px;
+    }
+    .coin {
+        width: 30px;
+        height: 30px;
+        font-size: 22px;
     }
     .controlButton {
-        width: 59px;
-        height: 53px;
+        width: 54px;
+        height: 48px;
+    }
+    .controlButton span {
+        font-size: 16px;
+    }
+    .controlButton small {
+        font-size: 7px;
     }
     .pauseButton {
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
+        font-size: 15px;
     }
     .statCard strong {
         font-size: 13px;
@@ -975,21 +1117,90 @@ footer {
     .statIcon {
         font-size: 14px;
     }
-    .wordChallenge {
-        top: 6px;
-        width: 80%;
-        padding: 5px 7px;
+    .letterCollector {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .collectorHeader {
+        width: 100%;
     }
     .wordDisplay {
+        justify-content: center;
+    }
+    .wordDisplay span {
+        width: 32px;
+        height: 38px;
+        font-size: 16px;
+    }
+    .collectorProgress {
+        width: fit-content;
+        margin: auto;
+    }
+    .controlInfo {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 330px) {
+    .wordDisplay {
+        gap: 4px;
+    }
+    .wordDisplay span {
+        width: 28px;
+        height: 34px;
         font-size: 14px;
-        letter-spacing: 2px;
+    }
+    .collectorHint {
+        font-size: 6px;
+    }
+}
+
+
+/* Landscape phones */
+
+@media (max-height: 480px) and (orientation: landscape) {
+    .gameArea {
+        height: 80vh;
+        height: 80dvh;
+        height: 80svh;
+        min-height: 300px;
+    }
+    .header {
+        margin-bottom: 6px;
+    }
+    .controlInfo {
+        display: none;
+    }
+    /* Keep dashboards compact so the game stays tall in landscape */
+    .gameLayout {
+        grid-template-columns: 80px minmax(280px, 1fr) 80px;
+        gap: 8px;
+    }
+    .statCard {
+        min-height: 70px;
+        padding: 8px;
+    }
+}
+
+
+/* Landscape tablets (short height, wide width) */
+
+@media (min-width: 700px) and (max-height: 600px) and (orientation: landscape) {
+    .gameArea {
+        height: 78vh;
+        height: 78dvh;
+        height: 78svh;
+    }
+    .controlInfo {
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
 
 /* =========================================================
-   TOUCH
-   ========================================================= */
+   TOUCH & ACCESSIBILITY
+   ========================================================== */
 
 @media (hover: none) and (pointer: coarse) {
     button {
@@ -998,12 +1209,41 @@ footer {
     .statCard:hover {
         transform: none;
     }
+    /* Minimum comfortable touch targets on touch devices */
+    .controlButton,
+    .pauseButton,
+    .mainButton,
+    .quickControls span {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+
+/* Visible focus for keyboard users */
+
+:focus-visible {
+    outline: 3px solid var(--c-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+
+/* Respect OS high-contrast / forced-colors settings */
+
+@media (forced-colors: active) {
+    .statCard,
+    .overlayCard,
+    .controlButton,
+    .pauseButton {
+        border: 2px solid CanvasText;
+    }
 }
 
 
 /* =========================================================
    REDUCED MOTION
-   ========================================================= */
+   ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -1011,5 +1251,638 @@ footer {
     *::after {
         animation-duration: 0.001ms !important;
         animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+
+/* =========================================================
+   FINAL DEVICE-SAFE RESPONSIVE OVERRIDES
+   These rules intentionally come last so they override the
+   desktop/container-query sizing above.
+   ========================================================= */
+
+html {
+    width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+}
+
+img {
+    max-width: 100%;
+}
+
+button {
+    font: inherit;
+}
+
+
+/* Keep the complete page inside the safe viewport. */
+
+.container {
+    width: min(1250px, calc(100% - 24px));
+    max-width: 1250px;
+    min-width: 0;
+}
+
+
+/* Collector never becomes wider than the game/page. */
+
+.letterCollector {
+    width: min(760px, 100%);
+    max-width: 100%;
+    min-width: 0;
+}
+
+
+/* =========================================================
+   TABLET / SMALL LAPTOP
+   ========================================================= */
+
+@media (max-width: 1100px) and (min-width: 701px) {
+    .container {
+        width: min(100% - 28px, 1000px);
+    }
+    .gameLayout {
+        grid-template-columns: minmax(90px, 120px) minmax(0, 1fr) minmax(90px, 120px);
+        gap: 12px;
+        align-items: stretch;
+    }
+    .gameArea {
+        min-width: 0;
+        height: min(680px, calc(100svh - 250px));
+        min-height: 480px;
+    }
+    .sideBoard {
+        min-width: 0;
+    }
+    .statCard {
+        min-width: 0;
+        overflow: hidden;
+    }
+}
+
+
+/* =========================================================
+   ALL PHONES + SMALL TABLETS
+   ========================================================= */
+
+@media (max-width: 700px) {
+    .container {
+        width: 100%;
+        max-width: 100%;
+        padding: 10px 10px calc(24px + env(safe-area-inset-bottom));
+    }
+    .header {
+        width: 100%;
+        margin-bottom: 12px;
+        gap: 9px;
+    }
+    .logo {
+        width: 42px;
+        height: 42px;
+        font-size: 22px;
+        border-radius: 12px;
+    }
+    .brand-text {
+        min-width: 0;
+    }
+    .brand-text h1 {
+        font-size: clamp(19px, 7vw, 25px);
+        letter-spacing: 1.5px;
+        white-space: nowrap;
+    }
+    .brand-text p {
+        margin-top: 4px;
+        font-size: clamp(6px, 2vw, 8px);
+        letter-spacing: 2px;
+    }
+    /* IMPORTANT: phones use one column, never three columns. */
+    .gameLayout {
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "left" "game" "right";
+        gap: 10px;
+        justify-items: stretch;
+        align-items: stretch;
+    }
+    .gameLayout>.leftBoard {
+        grid-area: left;
+    }
+    .gameLayout>.gameArea {
+        grid-area: game;
+    }
+    .gameLayout>.rightBoard {
+        grid-area: right;
+    }
+    /* Two compact cards instead of tall desktop sidebars. */
+    .sideBoard {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .statCard {
+        width: 100%;
+        min-width: 0;
+        min-height: 62px;
+        height: 62px;
+        padding: 7px 8px;
+        border-radius: 14px;
+        flex-direction: row;
+        justify-content: center;
+        gap: 7px;
+        overflow: hidden;
+    }
+    .statIcon {
+        flex: 0 0 auto;
+        margin: 0;
+        font-size: 18px;
+    }
+    .statCard .label {
+        font-size: 7px;
+        letter-spacing: 1.3px;
+        white-space: nowrap;
+    }
+    .statCard strong {
+        margin: 0;
+        font-size: clamp(14px, 4vw, 18px);
+        white-space: nowrap;
+    }
+    .speedCard small {
+        display: inline;
+        font-size: 6px;
+    }
+    /* The road gets its own clean, predictable mobile size. */
+    .gameArea {
+        width: 100%;
+        min-width: 0;
+        height: clamp(430px, calc(100svh - 310px), 650px);
+        min-height: 430px;
+        max-height: 650px;
+        border-width: 2px;
+        border-radius: 20px;
+    }
+    .leftEdge {
+        left: clamp(20px, 7vw, 30px);
+    }
+    .rightEdge {
+        right: clamp(20px, 7vw, 30px);
+    }
+    .roadGlow {
+        width: clamp(35px, 12vw, 52px);
+    }
+    .roadLine {
+        width: 4px;
+        height: clamp(80px, 18vw, 105px);
+    }
+    .playerWrapper {
+        bottom: clamp(20px, 5vh, 28px);
+        height: 100px;
+    }
+    .playerCar {
+        width: clamp(48px, 14vw, 62px);
+    }
+    .enemyCar {
+        width: clamp(46px, 13vw, 58px);
+    }
+    .coin {
+        width: clamp(28px, 9vw, 35px);
+        height: clamp(28px, 9vw, 35px);
+        font-size: clamp(21px, 7vw, 27px);
+    }
+    .letter {
+        width: clamp(34px, 10vw, 42px);
+        height: clamp(34px, 10vw, 42px);
+        font-size: clamp(15px, 5vw, 19px);
+        border-radius: 10px;
+    }
+    /* Collector: one clean mobile card. */
+    .letterCollector {
+        width: 100%;
+        margin: 0 auto 10px;
+        padding: 11px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 9px;
+        border-radius: 16px;
+    }
+    .collectorHeader {
+        width: 100%;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+    }
+    .collectorIcon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        font-size: 18px;
+        border-radius: 11px;
+    }
+    .collectorHeader>div {
+        min-width: 0;
+    }
+    .collectorLabel {
+        font-size: 9px;
+        letter-spacing: 1.5px;
+    }
+    .collectorHint {
+        font-size: 7px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .wordDisplay {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+        gap: clamp(4px, 1.4vw, 7px);
+    }
+    .wordDisplay span {
+        width: clamp(29px, 9vw, 38px);
+        height: clamp(34px, 10vw, 42px);
+        flex: 0 0 auto;
+        border-radius: 9px;
+        font-size: clamp(14px, 4.5vw, 18px);
+    }
+    .collectorProgress {
+        align-self: center;
+        padding: 6px 9px;
+        font-size: 7px;
+        border-radius: 8px;
+    }
+    /* Start/pause/crash cards fit narrow screens. */
+    .overlay {
+        padding: 12px;
+    }
+    .overlayCard {
+        width: min(360px, 100%);
+        max-height: calc(100% - 24px);
+        padding: 20px 14px;
+        border-radius: 20px;
+    }
+    .overlayCard h2 {
+        font-size: clamp(19px, 7vw, 26px);
+    }
+    .overlayCard p {
+        font-size: 13px;
+    }
+    .quickControls {
+        gap: 5px;
+        margin: 14px 0;
+    }
+    .quickControls span {
+        padding: 6px 8px;
+        font-size: 8px;
+    }
+    .mainButton {
+        min-height: 46px;
+        padding: 11px 18px;
+        font-size: 12px;
+    }
+    /* Touch controls stay inside the screen. */
+    .gameControls {
+        width: 100%;
+        margin: 10px auto 0;
+        display: grid;
+        grid-template-columns: minmax(48px, 1fr) auto minmax(48px, 1fr);
+        align-items: center;
+        gap: 6px;
+    }
+    .centerControls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+    .controlButton {
+        width: clamp(50px, 17vw, 70px);
+        height: clamp(50px, 15vw, 60px);
+        min-width: 50px;
+        min-height: 48px;
+        padding: 5px;
+        border-radius: 14px;
+    }
+    .controlButton span {
+        font-size: clamp(16px, 5vw, 20px);
+    }
+    .controlButton small {
+        font-size: 7px;
+    }
+    .pauseButton {
+        width: clamp(42px, 13vw, 50px);
+        height: clamp(42px, 13vw, 50px);
+        min-width: 42px;
+        min-height: 42px;
+        font-size: 16px;
+    }
+    .controlInfo {
+        width: 100%;
+        margin: 13px auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+    .controlItem {
+        min-width: 0;
+        min-height: 50px;
+        padding: 7px;
+        grid-template-columns: 24px minmax(0, 1fr);
+        overflow: hidden;
+    }
+    .controlItem>span:first-child {
+        font-size: 16px;
+    }
+    .controlItem b {
+        font-size: 8px;
+        white-space: nowrap;
+    }
+    .controlItem small {
+        font-size: 6px;
+        white-space: nowrap;
+    }
+    footer {
+        margin-top: 10px;
+        font-size: 7px;
+        letter-spacing: 1px;
+        gap: 6px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES: 320px-380px
+   ========================================================= */
+
+@media (max-width: 380px) {
+    .container {
+        padding-left: 7px;
+        padding-right: 7px;
+    }
+    .header {
+        gap: 7px;
+    }
+    .logo {
+        width: 38px;
+        height: 38px;
+        font-size: 20px;
+    }
+    .brand-text h1 {
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+    .brand-text p {
+        font-size: 5.5px;
+        letter-spacing: 1.5px;
+    }
+    .gameArea {
+        height: clamp(390px, calc(100svh - 300px), 570px);
+        min-height: 390px;
+        border-radius: 17px;
+    }
+    .sideBoard {
+        gap: 5px;
+    }
+    .statCard {
+        height: 56px;
+        min-height: 56px;
+        padding: 5px;
+        gap: 4px;
+        border-radius: 11px;
+    }
+    .statIcon {
+        font-size: 15px;
+    }
+    .statCard .label {
+        font-size: 6px;
+        letter-spacing: 1px;
+    }
+    .statCard strong {
+        font-size: 13px;
+    }
+    .letterCollector {
+        padding: 9px;
+        gap: 7px;
+    }
+    .collectorIcon {
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+        font-size: 16px;
+    }
+    .collectorLabel {
+        font-size: 8px;
+        letter-spacing: 1px;
+    }
+    .collectorHint {
+        font-size: 6px;
+    }
+    .wordDisplay {
+        gap: 3px;
+    }
+    .wordDisplay span {
+        width: clamp(25px, 8.5vw, 32px);
+        height: clamp(30px, 10vw, 36px);
+        font-size: clamp(12px, 4.2vw, 15px);
+        border-radius: 7px;
+    }
+    .collectorProgress {
+        font-size: 6px;
+        padding: 5px 7px;
+    }
+    .gameControls {
+        grid-template-columns: minmax(42px, 1fr) auto minmax(42px, 1fr);
+        gap: 3px;
+    }
+    .controlButton {
+        width: 50px;
+        min-width: 46px;
+        height: 48px;
+        min-height: 46px;
+        border-radius: 12px;
+    }
+    .controlButton span {
+        font-size: 15px;
+    }
+    .controlButton small {
+        font-size: 6px;
+    }
+    .pauseButton {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        font-size: 14px;
+    }
+    .controlInfo {
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+    }
+    .controlItem {
+        min-height: 46px;
+        grid-template-columns: 20px minmax(0, 1fr);
+        padding: 6px;
+    }
+    .controlItem>span:first-child {
+        font-size: 14px;
+    }
+    .controlItem b {
+        font-size: 7px;
+    }
+    .controlItem small {
+        font-size: 5.5px;
+    }
+}
+
+
+/* =========================================================
+   EXTREMELY NARROW DEVICES: 280px-320px
+   ========================================================= */
+
+@media (max-width: 320px) {
+    .container {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+    .gameArea {
+        min-height: 360px;
+        height: clamp(360px, calc(100svh - 285px), 520px);
+    }
+    .sideBoard {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .statCard {
+        height: 52px;
+        min-height: 52px;
+        gap: 3px;
+    }
+    .statIcon {
+        font-size: 13px;
+    }
+    .statCard .label {
+        font-size: 5.5px;
+    }
+    .statCard strong {
+        font-size: 12px;
+    }
+    .wordDisplay span {
+        width: 24px;
+        height: 29px;
+        font-size: 12px;
+    }
+    .collectorHint {
+        display: none;
+    }
+    .gameControls {
+        grid-template-columns: 46px minmax(0, 1fr) 46px;
+    }
+    .centerControls {
+        gap: 3px;
+    }
+    .controlButton {
+        width: 45px;
+        min-width: 45px;
+        height: 45px;
+    }
+    .pauseButton {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        min-height: 38px;
+    }
+}
+
+
+/* =========================================================
+   LANDSCAPE PHONES
+   ========================================================= */
+
+@media (max-width: 900px) and (max-height: 600px) and (orientation: landscape) {
+    .container {
+        padding-top: 7px;
+    }
+    .header {
+        margin-bottom: 7px;
+    }
+    .letterCollector {
+        margin-bottom: 7px;
+        padding: 7px 10px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+    }
+    .collectorHeader {
+        grid-column: auto;
+    }
+    .collectorIcon {
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
+    }
+    .collectorHint {
+        display: block;
+        font-size: 6px;
+    }
+    .wordDisplay span {
+        width: 29px;
+        height: 32px;
+        font-size: 13px;
+    }
+    .gameLayout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "left" "game" "right";
+        gap: 6px;
+    }
+    .sideBoard {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+    }
+    .gameArea {
+        height: min(62svh, 430px);
+        min-height: 300px;
+        max-height: 430px;
+    }
+    .statCard {
+        height: 45px;
+        min-height: 45px;
+        padding: 4px;
+    }
+    .statIcon {
+        font-size: 13px;
+    }
+    .statCard .label {
+        font-size: 5px;
+    }
+    .statCard strong {
+        font-size: 11px;
+    }
+    .controlInfo {
+        display: none;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION / TOUCH
+   ========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+    .controlButton,
+    .pauseButton,
+    .mainButton {
+        touch-action: manipulation;
+    }
+    .gameArea {
+        touch-action: none;
     }
 }
