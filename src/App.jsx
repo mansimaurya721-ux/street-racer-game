@@ -120,6 +120,7 @@ function App() {
   const [enemies, setEnemies] = useState([]);
   const [coins, setCoins] = useState([]);
   const [letters, setLetters] = useState([]);
+  const [coinBursts, setCoinBursts] = useState([]);
 
 
   /* =======================================================
@@ -1144,6 +1145,7 @@ function App() {
       =================================================== */
 
       const remainingCoins = [];
+      const collectedCoinBursts = [];
 
       let coinsGained = 0;
 
@@ -1164,6 +1166,11 @@ function App() {
           )
         ) {
           coinsGained++;
+          collectedCoinBursts.push({
+            id: coin.id,
+            x: coin.x,
+            y: coin.y,
+          });
         } else {
           remainingCoins.push(
             coin
@@ -1182,6 +1189,28 @@ function App() {
 
         state.score +=
           coinsGained * 15;
+
+        // Create a short-lived bloom/burst for every collected coin.
+        if (collectedCoinBursts.length > 0) {
+          const burstIds = collectedCoinBursts.map((coin) => ({
+            ...coin,
+            id: `${coin.id}-${Date.now()}-${Math.random()}`,
+          }));
+
+          setCoinBursts((current) => [
+            ...current,
+            ...burstIds,
+          ]);
+
+          window.setTimeout(() => {
+            setCoinBursts((current) =>
+              current.filter(
+                (burst) =>
+                  !burstIds.some((item) => item.id === burst.id)
+              )
+            );
+          }, 600);
+        }
       }
 
 
@@ -1659,6 +1688,27 @@ function App() {
           ================================================= */}
 
           <div id="coinContainer">
+
+            {coinBursts.map((burst) => (
+              <div
+                key={burst.id}
+                className="coinBurst"
+                style={{
+                  left: `${burst.x}%`,
+                  top: `${burst.y}px`,
+                }}
+                aria-hidden="true"
+              >
+                <span className="burstCore">✦</span>
+                <span className="burstRay ray1">✦</span>
+                <span className="burstRay ray2">✦</span>
+                <span className="burstRay ray3">✦</span>
+                <span className="burstRay ray4">✦</span>
+                <span className="burstRay ray5">✦</span>
+                <span className="burstRay ray6">✦</span>
+                <span className="burstRing" />
+              </div>
+            ))}
 
             {coins.map(
               (coin) => (
