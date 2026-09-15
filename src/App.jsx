@@ -1,8 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import "./App.css";
 
 /* =========================================================
-   CONFIG
+   ASSETS
 ========================================================= */
 
 const ENEMY_IMAGES = [
@@ -12,541 +18,606 @@ const ENEMY_IMAGES = [
   "/images/enemycar4.png",
 ];
 
-const WORDS = [
-  "RACER",
-  "BOOST",
-  "SPEED",
-  "TURBO",
-  "NITRO",
-  "DRIFT",
-];
+const PLAYER_IMAGE = "/images/mycar.png";
 
-const PLAYER_SPEED_PCT_PER_SEC = 95;
+const MUSIC_SRC = "/alex-morgan-gaming-rock-545508.mp3";
+const CRASH_SOUND_SRC = "/fahhhhh.mp3";
 
-const BASE_FALL_SPEED = 190;
-const FALL_SPEED_PER_SEC = 3.2;
-const MAX_FALL_SPEED = 520;
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const BASE_SPEED = 190;
+const MAX_SPEED = 520;
 
 const BOOST_MULTIPLIER = 1.7;
 const BRAKE_MULTIPLIER = 0.5;
 
-const ENEMY_SPAWN_START_MS = 1300;
-const ENEMY_SPAWN_MIN_MS = 620;
+const BEST_KEY = "streetRacerBest";
+const MUTED_KEY = "streetRacerMuted";
 
-const COIN_SPAWN_MS = 850;
-const LETTER_SPAWN_MS = 2600;
+const FUEL_MAX = 100;
+const FUEL_DRAIN = 42;
+const FUEL_REGEN = 16;
+const MIN_BOOST_FUEL = 6;
 
-let idCounter = 1;
-
-const nextId = () => idCounter++;
-
+const COMBO_WINDOW_MS = 1100;
+const COMBO_MAX = 12;
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function pickWord(exclude) {
-  const options = WORDS.filter(
-    (word) => word !== exclude
+const clamp = (value, min, max) =>
+  Math.max(min, Math.min(max, value));
+
+const random = (min, max) =>
+  Math.random() * (max - min) + min;
+
+const distance = (a, b) =>
+  Math.sqrt(
+    Math.pow(a.x - b.x, 2) +
+    Math.pow(a.y - b.y, 2)
   );
-
-  return (
-    options[
-    Math.floor(
-      Math.random() * options.length
-    )
-    ] || WORDS[0]
-  );
-}
-
-function loadBest() {
-  try {
-    const value = Number(
-      localStorage.getItem("streetRacerBest")
-    );
-
-    return Number.isFinite(value)
-      ? value
-      : 0;
-  } catch {
-    return 0;
-  }
-}
-
 
 /* =========================================================
-   APP
+   COMPONENT
 ========================================================= */
 
-function App() {
-  /* =======================================================
-     BASIC STATE
-  ======================================================= */
+export default function App() {
+  const gameRef = useRef(null);
+  const playerRef = useRef(null);
+
+  const musicRef = useRef(null);
+  const crashAudioRef = useRef(null);
+
+  const animationRef = useRef(null);
+  const lastFrameRef = useRef(0);
+  const hudTimerRef = useRef(0);
+
+  /*
+    DOM refs keyed by object id.
+    These let the game loop write transform/style
+    directly to the DOM every single frame.
+  */
+  const enemyRefs = useRef(new Map());
+  const coinRefs = useRef(new Map());
+  const letterRefs = useRef(new Map());
+
+  const game = useRef({
+    running: false,
+    paused: false,
+    crashed: false,
+
+    score: 0,
+    distance: 0,
+    speed: BASE_SPEED,
+
+    playerX: 50,
+    targetX: 50,
+
+    enemies: [],
+    coins: [],
+    letters: [],
+
+    enemyId: 0,
+    coinId: 0,
+    letterId: 0,
+
+    enemyTimer: 0,
+    coinTimer: 0,
+    letterTimer: 0,
+
+    roadWidth: 0,
+    gameWidth: 0,
+    gameHeight: 0,
+
+    fuel: FUEL_MAX,
+    boosting: false,
+    braking: false,
+
+    combo: 0,
+    lastCollectTime: 0,
+
+    level: 1,
+
+    word: "RACE",
+    collectedLetters: [],
+
+    lastHudUpdate: 0,
+  });
+
+  /* =====================================================
+     STATE
+  ===================================================== */
 
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [crashed, setCrashed] = useState(false);
 
-  const [best, setBest] = useState(loadBest);
+  const [score, setScore] = useState(0);
 
-
-  /* =======================================================
-     HUD
-  ======================================================= */
-
-  const [hud, setHud] = useState({
-    score: 0,
-    coins: 0,
-    speed: 0,
-    boosting: false,
+  const [best, setBest] = useState(() => {
+    return Number(localStorage.getItem(BEST_KEY)) || 0;
   });
 
+  const [speed, setSpeed] = useState(BASE_SPEED);
+  const [fuel, setFuel] = useState(FUEL_MAX);
+  const [combo, setCombo] = useState(0);
+  const [level, setLevel] = useState(1);
 
-  /* =======================================================
-     WORD
-  ======================================================= */
-
-  const [wordState, setWordState] = useState({
-    word: WORDS[0],
-    collected: [],
-  });
-
-
-  /* =======================================================
-     RENDERED GAME OBJECTS
-  ======================================================= */
-
-  const [playerX, setPlayerX] = useState(50);
   const [enemies, setEnemies] = useState([]);
   const [coins, setCoins] = useState([]);
   const [letters, setLetters] = useState([]);
-  const [coinBursts, setCoinBursts] = useState([]);
 
+  const [collectedLetters, setCollectedLetters] =
+    useState([]);
 
-  /* =======================================================
-     REFS
-  ======================================================= */
+  const [newBest, setNewBest] = useState(false);
 
-  const gameAreaRef = useRef(null);
-
-  const rafRef = useRef(null);
-
-  const lastTimeRef = useRef(null);
-
-
-  /* =======================================================
-     AUDIO
-  ======================================================= */
-
-  const backgroundMusicRef = useRef(null);
-
-  const crashSoundRef = useRef(null);
-
-
-  /* =======================================================
-     AUDIO SETUP
-  ======================================================= */
-
-  useEffect(() => {
-    const bgMusic = new Audio(
-      "/alex-morgan-gaming-rock-545508.mp3"
-    );
-
-    bgMusic.loop = true;
-    bgMusic.volume = 0.35;
-    bgMusic.preload = "auto";
-
-    const crashSound = new Audio(
-      "/fahhhhh.mp3"
-    );
-
-    crashSound.volume = 0.85;
-    crashSound.preload = "auto";
-
-    backgroundMusicRef.current = bgMusic;
-    crashSoundRef.current = crashSound;
-
-    return () => {
-      bgMusic.pause();
-      bgMusic.currentTime = 0;
-
-      crashSound.pause();
-      crashSound.currentTime = 0;
-    };
-  }, []);
-
-
-  /* =======================================================
-     MUTABLE GAME STATE
-  ======================================================= */
-
-  const gs = useRef({
-    playerX: 50,
-
-    score: 0,
-
-    coinsCollected: 0,
-
-    elapsed: 0,
-
-    fallSpeed: BASE_FALL_SPEED,
-
-    boosting: false,
-
-    braking: false,
-
-    keys: {
-      left: false,
-      right: false,
-      boost: false,
-      brake: false,
-    },
-
-    enemies: [],
-
-    coins: [],
-
-    letters: [],
-
-    lastEnemySpawn: 0,
-
-    lastCoinSpawn: 0,
-
-    lastLetterSpawn: 0,
-
-    word: WORDS[0],
-
-    collected: new Set(),
+  const [muted, setMuted] = useState(() => {
+    return localStorage.getItem(MUTED_KEY) === "true";
   });
 
+  const [fullscreen, setFullscreen] = useState(false);
+  const [touchVisible, setTouchVisible] = useState(false);
 
-  /* =======================================================
-     RESPONSIVE GAME SIZE
-  ======================================================= */
+  /* =====================================================
+     ROAD BOUNDS
+  ===================================================== */
 
-  const getSizes = useCallback(() => {
-    const gameWidth =
-      gameAreaRef.current?.clientWidth ||
+  const getRoadBounds = useCallback(() => {
+    const width =
+      gameRef.current?.clientWidth ||
       window.innerWidth;
 
-    if (gameWidth <= 320) {
+    if (width <= 480) {
       return {
-        car: 53,
-        enemy: 50,
-        edge: 18,
+        left: 9,
+        right: 91,
       };
     }
 
-    if (gameWidth <= 380) {
+    if (width <= 700) {
       return {
-        car: 55,
-        enemy: 53,
-        edge: 20,
-      };
-    }
-
-    if (gameWidth <= 500) {
-      return {
-        car: 60,
-        enemy: 57,
-        edge: 22,
-      };
-    }
-
-    if (gameWidth <= 650) {
-      return {
-        car: 68,
-        enemy: 64,
-        edge: 30,
+        left: 10,
+        right: 90,
       };
     }
 
     return {
-      car: 76,
-      enemy: 70,
-      edge: 42,
+      left: 12,
+      right: 88,
     };
   }, []);
 
+  /* =====================================================
+     UPDATE GAME SIZE
+  ===================================================== */
 
-  /* =======================================================
-     CLAMP PLAYER
-  ======================================================= */
+  const updateGameSize = useCallback(() => {
+    if (!gameRef.current) return;
 
-  const clampPlayerX = useCallback(
-    (pct) => {
-      const { car, edge } =
-        getSizes();
+    const rect =
+      gameRef.current.getBoundingClientRect();
 
-      const width =
-        gameAreaRef.current?.clientWidth ||
-        500;
+    game.current.gameWidth = rect.width;
+    game.current.gameHeight = rect.height;
+  }, []);
 
-      const edgePct =
-        (edge / width) * 100;
+  /* =====================================================
+     SPAWN ENEMY
+  ===================================================== */
 
-      const halfCarPct =
-        (car / 2 / width) * 100;
+  const spawnEnemy = useCallback(() => {
+    const g = game.current;
 
-      const min =
-        edgePct +
-        halfCarPct +
-        1;
+    const bounds = getRoadBounds();
 
-      const max =
-        100 -
-        edgePct -
-        halfCarPct -
-        1;
+    const x = random(
+      bounds.left + 4,
+      bounds.right - 4
+    );
 
-      return Math.min(
-        max,
-        Math.max(min, pct)
-      );
-    },
-    [getSizes]
-  );
+    const enemy = {
+      id: ++g.enemyId,
+      x,
+      y: -150,
+      width: 62,
+      height: 108,
+      speedMultiplier: random(0.8, 1.15),
+      image:
+        ENEMY_IMAGES[
+        Math.floor(
+          Math.random() *
+          ENEMY_IMAGES.length
+        )
+        ],
+    };
 
+    g.enemies.push(enemy);
+  }, [getRoadBounds]);
 
-  /* =======================================================
-     RESET
-  ======================================================= */
+  /* =====================================================
+     SPAWN COIN
+  ===================================================== */
+
+  const spawnCoin = useCallback(() => {
+    const g = game.current;
+
+    const bounds = getRoadBounds();
+
+    g.coins.push({
+      id: ++g.coinId,
+      x: random(
+        bounds.left + 5,
+        bounds.right - 5
+      ),
+      y: -60,
+      size: 34,
+      rotation: random(0, 360),
+    });
+  }, [getRoadBounds]);
+
+  /* =====================================================
+     SPAWN LETTER
+  ===================================================== */
+
+  const spawnLetter = useCallback(() => {
+    const g = game.current;
+
+    const bounds = getRoadBounds();
+
+    /*
+     * IMPORTANT:
+     * Once the complete word has been collected,
+     * collectedLetters is reset to [].
+     *
+     * Therefore the same word automatically starts
+     * again without changing anything else.
+     */
+
+    const available =
+      g.word
+        .split("")
+        .filter(
+          (letter) =>
+            !g.collectedLetters.includes(
+              letter
+            )
+        );
+
+    if (!available.length) return;
+
+    const letter =
+      available[
+      Math.floor(
+        Math.random() *
+        available.length
+      )
+      ];
+
+    g.letters.push({
+      id: ++g.letterId,
+      letter,
+      x: random(
+        bounds.left + 6,
+        bounds.right - 6
+      ),
+      y: -70,
+      size: 46,
+    });
+  }, [getRoadBounds]);
+
+  /* =====================================================
+     RESET GAME
+  ===================================================== */
 
   const resetGame = useCallback(() => {
-    idCounter = 1;
+    const g = game.current;
 
-    const newWord = pickWord();
+    g.running = true;
+    g.paused = false;
+    g.crashed = false;
 
-    gs.current = {
-      playerX: 50,
+    g.score = 0;
+    g.distance = 0;
+    g.speed = BASE_SPEED;
 
-      score: 0,
+    g.playerX = 50;
+    g.targetX = 50;
 
-      coinsCollected: 0,
+    g.enemies = [];
+    g.coins = [];
+    g.letters = [];
 
-      elapsed: 0,
+    g.enemyId = 0;
+    g.coinId = 0;
+    g.letterId = 0;
 
-      fallSpeed: BASE_FALL_SPEED,
+    g.enemyTimer = 0;
+    g.coinTimer = 0;
+    g.letterTimer = 0;
 
-      boosting: false,
+    g.fuel = FUEL_MAX;
+    g.boosting = false;
+    g.braking = false;
 
-      braking: false,
+    g.combo = 0;
+    g.lastCollectTime = 0;
 
-      keys: {
-        left: false,
-        right: false,
-        boost: false,
-        brake: false,
-      },
+    g.level = 1;
 
-      enemies: [],
+    // Start the word hunt from the beginning.
+    g.collectedLetters = [];
 
-      coins: [],
+    enemyRefs.current.clear();
+    coinRefs.current.clear();
+    letterRefs.current.clear();
 
-      letters: [],
-
-      lastEnemySpawn: 0,
-
-      lastCoinSpawn: 0,
-
-      lastLetterSpawn: 0,
-
-      word: newWord,
-
-      collected: new Set(),
-    };
-
-    setPlayerX(50);
-
-    setEnemies([]);
-
-    setCoins([]);
-
-    setLetters([]);
-
-    setHud({
-      score: 0,
-      coins: 0,
-      speed: Math.round(
-        BASE_FALL_SPEED * 0.45
-      ),
-      boosting: false,
-    });
-
-    setWordState({
-      word: newWord,
-      collected: [],
-    });
-
+    setStarted(true);
+    setPaused(false);
     setCrashed(false);
 
-    setPaused(false);
-  }, []);
+    setScore(0);
+    setSpeed(BASE_SPEED);
+    setFuel(FUEL_MAX);
+    setCombo(0);
+    setLevel(1);
+    setCollectedLetters([]);
+    setNewBest(false);
 
+    setEnemies([]);
+    setCoins([]);
+    setLetters([]);
 
-  /* =======================================================
-     START
-  ======================================================= */
+    updateGameSize();
 
-  const startGame = useCallback(() => {
-    resetGame();
+    lastFrameRef.current = performance.now();
 
-    setStarted(true);
+    if (!muted && musicRef.current) {
+      musicRef.current.currentTime = 0;
 
-    if (backgroundMusicRef.current) {
-      backgroundMusicRef.current.currentTime = 0;
-
-      backgroundMusicRef.current
+      musicRef.current
         .play()
-        .catch(() => {
-          console.log(
-            "Background music requires user interaction."
-          );
-        });
+        .catch(() => { });
     }
-  }, [resetGame]);
+  }, [muted, updateGameSize]);
 
+  /* =====================================================
+     CRASH
+  ===================================================== */
 
-  /* =======================================================
-     RESTART
-  ======================================================= */
+  const crashGame = useCallback(() => {
+    const g = game.current;
 
-  const restartGame = useCallback(() => {
-    resetGame();
+    if (g.crashed) return;
 
-    setStarted(true);
+    g.running = false;
+    g.crashed = true;
 
-    if (backgroundMusicRef.current) {
-      backgroundMusicRef.current.currentTime = 0;
+    setCrashed(true);
 
-      backgroundMusicRef.current
+    if (musicRef.current) {
+      musicRef.current.pause();
+    }
+
+    if (!muted && crashAudioRef.current) {
+      crashAudioRef.current.currentTime = 0;
+
+      crashAudioRef.current
         .play()
-        .catch(() => {
-          console.log(
-            "Background music requires user interaction."
-          );
-        });
+        .catch(() => { });
     }
-  }, [resetGame]);
 
+    const finalScore = Math.floor(g.score);
 
-  /* =======================================================
-     PAUSE / RESUME AUDIO
-  ======================================================= */
+    if (finalScore > best) {
+      localStorage.setItem(
+        BEST_KEY,
+        String(finalScore)
+      );
 
-  useEffect(() => {
-    const music =
-      backgroundMusicRef.current;
+      setBest(finalScore);
+      setNewBest(true);
+    }
+  }, [best, muted]);
 
-    if (!music) return;
+  /* =====================================================
+     POINTER / MOUSE STEERING
+  ===================================================== */
+
+  const handlePointerMove = useCallback(
+    (event) => {
+      const g = game.current;
+
+      if (
+        !g.running ||
+        g.paused ||
+        g.crashed ||
+        !gameRef.current
+      ) {
+        return;
+      }
+
+      const rect =
+        gameRef.current.getBoundingClientRect();
+
+      const mouseX =
+        event.clientX - rect.left;
+
+      let percent =
+        (mouseX / rect.width) * 100;
+
+      const bounds = getRoadBounds();
+
+      percent = clamp(
+        percent,
+        bounds.left,
+        bounds.right
+      );
+
+      g.targetX = percent;
+
+      g.playerX +=
+        (g.targetX - g.playerX) * 0.25;
+    },
+    [getRoadBounds]
+  );
+
+  /* =====================================================
+     TOUCH STEERING
+  ===================================================== */
+
+  const steerLeft = useCallback(() => {
+    const g = game.current;
 
     if (
-      !started ||
-      paused ||
-      crashed
+      !g.running ||
+      g.paused ||
+      g.crashed
+    )
+      return;
+
+    const bounds = getRoadBounds();
+
+    g.targetX = clamp(
+      g.targetX - 7,
+      bounds.left,
+      bounds.right
+    );
+  }, [getRoadBounds]);
+
+  const steerRight = useCallback(() => {
+    const g = game.current;
+
+    if (
+      !g.running ||
+      g.paused ||
+      g.crashed
+    )
+      return;
+
+    const bounds = getRoadBounds();
+
+    g.targetX = clamp(
+      g.targetX + 7,
+      bounds.left,
+      bounds.right
+    );
+  }, [getRoadBounds]);
+
+  /* =====================================================
+     TOGGLE PAUSE
+  ===================================================== */
+
+  const togglePause = useCallback(() => {
+    const g = game.current;
+
+    if (!g.running && !paused) return;
+
+    g.paused = !g.paused;
+
+    setPaused(g.paused);
+
+    if (g.paused) {
+      musicRef.current?.pause();
+    } else if (!muted) {
+      musicRef.current
+        ?.play()
+        .catch(() => { });
+
+      lastFrameRef.current =
+        performance.now();
+    }
+  }, [muted, paused]);
+
+  /* =====================================================
+     BOOST
+  ===================================================== */
+
+  const startBoost = useCallback(() => {
+    const g = game.current;
+
+    if (
+      !g.running ||
+      g.paused ||
+      g.crashed ||
+      g.fuel < MIN_BOOST_FUEL
     ) {
-      music.pause();
       return;
     }
 
-    music
-      .play()
-      .catch(() => { });
-  }, [
-    started,
-    paused,
-    crashed,
-  ]);
+    g.boosting = true;
+  }, []);
 
+  const stopBoost = useCallback(() => {
+    game.current.boosting = false;
+  }, []);
 
-  /* =======================================================
+  /* =====================================================
      KEYBOARD
-  ======================================================= */
+  ===================================================== */
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      const keys =
-        gs.current.keys;
+      const key =
+        event.key.toLowerCase();
 
-      switch (event.key) {
-        case "ArrowLeft":
-        case "a":
-        case "A":
-          keys.left = true;
-          event.preventDefault();
-          break;
+      if (
+        key === "arrowleft" ||
+        key === "a"
+      ) {
+        event.preventDefault();
+        steerLeft();
+      }
 
-        case "ArrowRight":
-        case "d":
-        case "D":
-          keys.right = true;
-          event.preventDefault();
-          break;
+      if (
+        key === "arrowright" ||
+        key === "d"
+      ) {
+        event.preventDefault();
+        steerRight();
+      }
 
-        case "ArrowUp":
-        case "w":
-        case "W":
-        case " ":
-          keys.boost = true;
-          event.preventDefault();
-          break;
+      if (
+        key === "shift" ||
+        key === " "
+      ) {
+        event.preventDefault();
+        startBoost();
+      }
 
-        case "ArrowDown":
-        case "s":
-        case "S":
-          keys.brake = true;
-          event.preventDefault();
-          break;
+      if (key === "p") {
+        event.preventDefault();
+        togglePause();
+      }
 
-        case "p":
-        case "P":
-          if (
-            started &&
-            !crashed
-          ) {
-            setPaused(
-              (value) => !value
-            );
-          }
-          break;
+      if (
+        key === "enter" &&
+        game.current.crashed
+      ) {
+        event.preventDefault();
+        resetGame();
+      }
 
-        default:
-          break;
+      if (
+        key === "escape" &&
+        fullscreen
+      ) {
+        document.exitFullscreen?.();
       }
     };
 
     const handleKeyUp = (event) => {
-      const keys =
-        gs.current.keys;
+      const key =
+        event.key.toLowerCase();
 
-      switch (event.key) {
-        case "ArrowLeft":
-        case "a":
-        case "A":
-          keys.left = false;
-          break;
-
-        case "ArrowRight":
-        case "d":
-        case "D":
-          keys.right = false;
-          break;
-
-        case "ArrowUp":
-        case "w":
-        case "W":
-        case " ":
-          keys.boost = false;
-          break;
-
-        case "ArrowDown":
-        case "s":
-        case "S":
-          keys.brake = false;
-          break;
-
-        default:
-          break;
+      if (
+        key === "shift" ||
+        key === " "
+      ) {
+        stopBoost();
       }
     };
 
@@ -572,605 +643,396 @@ function App() {
       );
     };
   }, [
-    started,
-    crashed,
+    steerLeft,
+    steerRight,
+    startBoost,
+    stopBoost,
+    togglePause,
+    resetGame,
+    fullscreen,
   ]);
 
-
-  /* =======================================================
-     RESET KEYS
-  ======================================================= */
-
-  const releaseAllKeys = useCallback(() => {
-    gs.current.keys.left = false;
-    gs.current.keys.right = false;
-    gs.current.keys.boost = false;
-    gs.current.keys.brake = false;
-  }, []);
-
-
-  /* =======================================================
-     BUTTON CONTROL
-  ======================================================= */
-
-  const setKey = useCallback(
-    (key, value) => {
-      if (
-        !started ||
-        paused ||
-        crashed
-      ) {
-        return;
-      }
-
-      gs.current.keys[key] =
-        value;
-    },
-    [
-      started,
-      paused,
-      crashed,
-    ]
-  );
-
-
-  /* =======================================================
-     POINTER / TOUCH MOVEMENT
-  ======================================================= */
-
-  const handlePointerMove = useCallback(
-    (event) => {
-      if (
-        !started ||
-        paused ||
-        crashed
-      ) {
-        return;
-      }
-
-      const area =
-        gameAreaRef.current;
-
-      if (!area) return;
-
-      const rect =
-        area.getBoundingClientRect();
-
-      const clientX =
-        event.clientX;
-
-      if (
-        typeof clientX !== "number"
-      ) {
-        return;
-      }
-
-      const pct =
-        ((clientX - rect.left) /
-          rect.width) *
-        100;
-
-      gs.current.playerX =
-        clampPlayerX(pct);
-    },
-    [
-      started,
-      paused,
-      crashed,
-      clampPlayerX,
-    ]
-  );
-
-
-  /* =======================================================
+  /* =====================================================
      GAME LOOP
-  ======================================================= */
+  ===================================================== */
 
   useEffect(() => {
-    if (
-      !started ||
-      paused ||
-      crashed
-    ) {
-      lastTimeRef.current = null;
+    const loop = (time) => {
+      animationRef.current =
+        requestAnimationFrame(loop);
 
-      if (rafRef.current) {
-        cancelAnimationFrame(
-          rafRef.current
-        );
-      }
+      const g = game.current;
 
-      return;
-    }
-
-    const tick = (time) => {
       if (
-        lastTimeRef.current === null
+        !g.running ||
+        g.paused ||
+        g.crashed
       ) {
-        lastTimeRef.current = time;
-      }
-
-      const dt = Math.min(
-        50,
-        time -
-        lastTimeRef.current
-      );
-
-      lastTimeRef.current = time;
-
-      const state =
-        gs.current;
-
-      const area =
-        gameAreaRef.current;
-
-      if (!area) {
-        rafRef.current =
-          requestAnimationFrame(
-            tick
-          );
-
+        lastFrameRef.current = time;
         return;
       }
 
-      const areaWidth =
-        area.clientWidth;
+      let dt =
+        (time -
+          lastFrameRef.current) /
+        1000;
 
-      const areaHeight =
-        area.clientHeight;
+      lastFrameRef.current = time;
 
-      const {
-        car: carSize,
-        enemy: enemySize,
-        edge,
-      } = getSizes();
+      dt = Math.min(dt, 0.04);
 
+      updateGameSize();
 
-      /* ===================================================
+      /* ---------------------------------------------
          SPEED
-      =================================================== */
+      --------------------------------------------- */
 
-      state.elapsed += dt;
+      const speedIncrease =
+        4.5 * dt;
 
-      state.boosting =
-        state.keys.boost;
+      g.speed = Math.min(
+        MAX_SPEED,
+        g.speed + speedIncrease
+      );
 
-      state.braking =
-        state.keys.brake &&
-        !state.keys.boost;
+      let currentSpeed = g.speed;
 
-      const rampSpeed =
-        Math.min(
-          MAX_FALL_SPEED,
-
-          BASE_FALL_SPEED +
-          (state.elapsed /
-            1000) *
-          FALL_SPEED_PER_SEC *
-          10
-        );
-
-      let effectiveSpeed =
-        rampSpeed;
+      /* ---------------------------------------------
+         BOOST
+      --------------------------------------------- */
 
       if (
-        state.boosting
+        g.boosting &&
+        g.fuel > 0
       ) {
-        effectiveSpeed *=
+        currentSpeed *=
           BOOST_MULTIPLIER;
-      } else if (
-        state.braking
-      ) {
-        effectiveSpeed *=
+
+        g.fuel = Math.max(
+          0,
+          g.fuel -
+          FUEL_DRAIN * dt
+        );
+
+        if (g.fuel <= 0) {
+          g.boosting = false;
+        }
+      } else {
+        g.fuel = Math.min(
+          FUEL_MAX,
+          g.fuel +
+          FUEL_REGEN * dt
+        );
+      }
+
+      /* ---------------------------------------------
+         BRAKE
+      --------------------------------------------- */
+
+      if (g.braking) {
+        currentSpeed *=
           BRAKE_MULTIPLIER;
       }
 
-      state.fallSpeed =
-        effectiveSpeed;
-
-
-      /* ===================================================
+      /* ---------------------------------------------
          PLAYER MOVEMENT
-      =================================================== */
+      --------------------------------------------- */
 
-      const movePct =
-        (PLAYER_SPEED_PCT_PER_SEC *
-          dt) /
-        1000;
+      const steeringSmooth =
+        1 -
+        Math.exp(-12 * dt);
 
-      if (
-        state.keys.left
-      ) {
-        state.playerX -=
-          movePct;
+      g.playerX +=
+        (g.targetX - g.playerX) *
+        steeringSmooth;
+
+      const bounds =
+        getRoadBounds();
+
+      g.playerX = clamp(
+        g.playerX,
+        bounds.left,
+        bounds.right
+      );
+
+      if (playerRef.current) {
+        playerRef.current.style.left =
+          `${g.playerX}%`;
       }
 
-      if (
-        state.keys.right
-      ) {
-        state.playerX +=
-          movePct;
+      /* ---------------------------------------------
+         DISTANCE / SCORE
+      --------------------------------------------- */
+
+      g.distance +=
+        currentSpeed * dt;
+
+      g.score +=
+        currentSpeed *
+        dt *
+        0.055;
+
+      /* ---------------------------------------------
+         LEVEL
+      --------------------------------------------- */
+
+      const newLevel =
+        Math.floor(
+          g.score / 500
+        ) + 1;
+
+      if (newLevel !== g.level) {
+        g.level = newLevel;
       }
 
-      state.playerX =
-        clampPlayerX(
-          state.playerX
-        );
+      /* ---------------------------------------------
+         SPAWN TIMERS
+      --------------------------------------------- */
 
-
-      /* ===================================================
-         ENEMY SPAWN
-      =================================================== */
+      g.enemyTimer += dt;
+      g.coinTimer += dt;
+      g.letterTimer += dt;
 
       const enemyInterval =
         Math.max(
-          ENEMY_SPAWN_MIN_MS,
-
-          ENEMY_SPAWN_START_MS -
-          state.elapsed / 12
+          0.55,
+          1.35 -
+          g.score / 7000
         );
 
-      state.lastEnemySpawn +=
-        dt;
+      let objectsChanged = false;
 
       if (
-        state.lastEnemySpawn >=
+        g.enemyTimer >=
         enemyInterval
       ) {
-        state.lastEnemySpawn = 0;
+        g.enemyTimer = 0;
 
-        const edgePct =
-          (edge / areaWidth) *
-          100;
+        if (g.enemies.length < 8) {
+          spawnEnemy();
+          objectsChanged = true;
+        }
+      }
 
-        const halfPct =
-          (enemySize /
-            2 /
-            areaWidth) *
-          100;
+      if (
+        g.coinTimer >= 1.15
+      ) {
+        g.coinTimer = 0;
 
-        const available =
-          100 -
-          2 *
-          (
-            edgePct +
-            halfPct
+        if (g.coins.length < 4) {
+          spawnCoin();
+          objectsChanged = true;
+        }
+      }
+
+      if (
+        g.letterTimer >= 4.2
+      ) {
+        g.letterTimer = 0;
+
+        if (g.letters.length < 2) {
+          spawnLetter();
+          objectsChanged = true;
+        }
+      }
+
+      /* ---------------------------------------------
+         OBJECT MOVEMENT
+      --------------------------------------------- */
+
+      const movement =
+        currentSpeed * dt;
+
+      for (const enemy of g.enemies) {
+        enemy.y +=
+          movement *
+          enemy.speedMultiplier;
+
+        const el =
+          enemyRefs.current.get(
+            enemy.id
           );
 
-        const x =
-          edgePct +
-          halfPct +
-          Math.random() *
-          available;
-
-        state.enemies.push({
-          id: nextId(),
-
-          x,
-
-          y: -180,
-
-          img:
-            ENEMY_IMAGES[
-            Math.floor(
-              Math.random() *
-              ENEMY_IMAGES.length
-            )
-            ],
-        });
-      }
-
-
-      /* ===================================================
-         COINS
-      =================================================== */
-
-      state.lastCoinSpawn +=
-        dt;
-
-      if (
-        state.lastCoinSpawn >=
-        COIN_SPAWN_MS
-      ) {
-        state.lastCoinSpawn = 0;
-
-        const edgePct =
-          (edge / areaWidth) *
-          100;
-
-        const available =
-          100 -
-          2 *
-          (edgePct + 4);
-
-        const x =
-          edgePct +
-          4 +
-          Math.random() *
-          available;
-
-        state.coins.push({
-          id: nextId(),
-
-          x,
-
-          y: -60,
-        });
-      }
-
-
-      /* ===================================================
-         LETTERS
-      =================================================== */
-
-      state.lastLetterSpawn +=
-        dt;
-
-      if (
-        state.lastLetterSpawn >=
-        LETTER_SPAWN_MS
-      ) {
-        state.lastLetterSpawn = 0;
-
-        const needed = [
-          ...new Set(
-            state.word.split("")
-          ),
-        ].filter(
-          (letter) =>
-            !state.collected.has(
-              letter
-            )
-        );
-
-        if (
-          needed.length > 0
-        ) {
-          const ch =
-            needed[
-            Math.floor(
-              Math.random() *
-              needed.length
-            )
-            ];
-
-          const edgePct =
-            (edge / areaWidth) *
-            100;
-
-          const available =
-            100 -
-            2 *
-            (edgePct + 6);
-
-          const x =
-            edgePct +
-            6 +
-            Math.random() *
-            available;
-
-          state.letters.push({
-            id: nextId(),
-
-            x,
-
-            y: -60,
-
-            ch,
-          });
+        if (el) {
+          el.style.transform =
+            `translate3d(-50%, ${enemy.y}px, 0)`;
         }
       }
 
+      for (const coin of g.coins) {
+        coin.y += movement;
 
-      /* ===================================================
-         FALLING OBJECTS
-      =================================================== */
+        coin.rotation +=
+          180 * dt;
 
-      const fallPx =
-        (state.fallSpeed *
-          dt) /
-        1000;
+        const el =
+          coinRefs.current.get(
+            coin.id
+          );
 
-      state.enemies.forEach(
-        (enemy) => {
-          enemy.y += fallPx;
+        if (el) {
+          el.style.transform =
+            `translate3d(-50%, ${coin.y}px, 0) rotate(${coin.rotation}deg)`;
         }
-      );
+      }
 
-      state.coins.forEach(
-        (coin) => {
-          coin.y += fallPx;
+      for (const letter of g.letters) {
+        letter.y += movement;
+
+        const el =
+          letterRefs.current.get(
+            letter.id
+          );
+
+        if (el) {
+          el.style.transform =
+            `translate3d(-50%, ${letter.y}px, 0)`;
         }
-      );
+      }
 
-      state.letters.forEach(
-        (letter) => {
-          letter.y += fallPx;
-        }
-      );
+      /* ---------------------------------------------
+         REMOVE OFFSCREEN OBJECTS
+      --------------------------------------------- */
 
+      const beforeEnemyCount =
+        g.enemies.length;
 
-      /* ===================================================
-         REMOVE OFFSCREEN
-      =================================================== */
+      const beforeCoinCount =
+        g.coins.length;
 
-      state.enemies =
-        state.enemies.filter(
+      const beforeLetterCount =
+        g.letters.length;
+
+      g.enemies =
+        g.enemies.filter(
           (enemy) =>
             enemy.y <
-            areaHeight + 150
+            g.gameHeight + 160
         );
 
-      state.coins =
-        state.coins.filter(
+      g.coins =
+        g.coins.filter(
           (coin) =>
             coin.y <
-            areaHeight + 80
+            g.gameHeight + 80
         );
 
-      state.letters =
-        state.letters.filter(
+      g.letters =
+        g.letters.filter(
           (letter) =>
             letter.y <
-            areaHeight + 80
+            g.gameHeight + 100
         );
 
-
-      /* ===================================================
-         PLAYER COLLISION
-      =================================================== */
-
-      const playerWidth =
-        carSize;
-
-      const playerHeight =
-        carSize * 1.35;
-
-      const playerLeft =
-        (state.playerX /
-          100) *
-        areaWidth -
-        playerWidth / 2;
-
-      const playerBottom =
-        30;
-
-      const playerTop =
-        areaHeight -
-        playerBottom -
-        playerHeight;
-
-      const playerRect = {
-        left:
-          playerLeft +
-          playerWidth *
-          0.18,
-
-        right:
-          playerLeft +
-          playerWidth *
-          0.82,
-
-        top:
-          playerTop +
-          playerHeight *
-          0.12,
-
-        bottom:
-          areaHeight -
-          playerBottom -
-          playerHeight *
-          0.08,
-      };
-
-
-      /* ===================================================
-         RECTANGLE HELPER
-      =================================================== */
-
-      const rectOf = (
-        item,
-        size,
-        scale = 0.8
-      ) => {
-        const left =
-          (item.x / 100) *
-          areaWidth -
-          size / 2;
-
-        const inset =
-          (size *
-            (1 - scale)) /
-          2;
-
-        return {
-          left:
-            left + inset,
-
-          right:
-            left +
-            size -
-            inset,
-
-          top:
-            item.y + inset,
-
-          bottom:
-            item.y +
-            size -
-            inset,
-        };
-      };
-
-      const overlaps = (
-        a,
-        b
-      ) =>
-        a.left < b.right &&
-        a.right > b.left &&
-        a.top < b.bottom &&
-        a.bottom > b.top;
-
-
-      /* ===================================================
-         ENEMY COLLISION
-      =================================================== */
-
-      let hitEnemy = false;
-
-      for (
-        const enemy of state.enemies
+      if (
+        g.enemies.length !==
+        beforeEnemyCount ||
+        g.coins.length !==
+        beforeCoinCount ||
+        g.letters.length !==
+        beforeLetterCount
       ) {
-        const enemyRect =
-          rectOf(
-            enemy,
-            enemySize * 1.25,
-            0.65
+        objectsChanged = true;
+      }
+
+      /* ---------------------------------------------
+         PLAYER COLLISION AREA
+      --------------------------------------------- */
+
+      const playerY =
+        g.gameHeight - 145;
+
+      const playerX =
+        g.playerX;
+
+      /* ---------------------------------------------
+         ENEMY COLLISIONS
+      --------------------------------------------- */
+
+      for (const enemy of g.enemies) {
+        const horizontal =
+          Math.abs(
+            enemy.x -
+            playerX
+          );
+
+        const vertical =
+          Math.abs(
+            enemy.y -
+            playerY
           );
 
         if (
-          overlaps(
-            playerRect,
-            enemyRect
-          )
+          horizontal < 6.2 &&
+          vertical < 70
         ) {
-          hitEnemy = true;
+          crashGame();
           break;
         }
       }
 
+      if (g.crashed) return;
 
-      /* ===================================================
-         COIN COLLECTION
-      =================================================== */
+      /* ---------------------------------------------
+         COIN COLLISIONS
+      --------------------------------------------- */
 
       const remainingCoins = [];
-      const collectedCoinBursts = [];
 
-      let coinsGained = 0;
+      for (const coin of g.coins) {
+        const horizontal =
+          Math.abs(
+            coin.x -
+            playerX
+          );
 
-      for (
-        const coin of state.coins
-      ) {
-        const coinRect =
-          rectOf(
-            coin,
-            38,
-            0.9
+        const vertical =
+          Math.abs(
+            coin.y -
+            playerY
           );
 
         if (
-          overlaps(
-            playerRect,
-            coinRect
-          )
+          horizontal < 5 &&
+          vertical < 65
         ) {
-          coinsGained++;
-          collectedCoinBursts.push({
-            id: coin.id,
-            x: coin.x,
-            y: coin.y,
-          });
+          const now =
+            performance.now();
+
+          if (
+            now -
+            g.lastCollectTime <=
+            COMBO_WINDOW_MS
+          ) {
+            g.combo =
+              Math.min(
+                COMBO_MAX,
+                g.combo + 1
+              );
+          } else {
+            g.combo = 1;
+          }
+
+          g.lastCollectTime =
+            now;
+
+          const multiplier =
+            1 +
+            Math.min(
+              g.combo,
+              COMBO_MAX
+            ) *
+            0.15;
+
+          g.score +=
+            50 *
+            multiplier;
+
+          coinRefs.current.delete(
+            coin.id
+          );
+
+          objectsChanged = true;
         } else {
           remainingCoins.push(
             coin
@@ -1178,654 +1040,761 @@ function App() {
         }
       }
 
-      state.coins =
+      g.coins =
         remainingCoins;
 
-      if (
-        coinsGained > 0
-      ) {
-        state.coinsCollected +=
-          coinsGained;
-
-        state.score +=
-          coinsGained * 15;
-
-        // Create a short-lived bloom/burst for every collected coin.
-        if (collectedCoinBursts.length > 0) {
-          const burstIds = collectedCoinBursts.map((coin) => ({
-            ...coin,
-            id: `${coin.id}-${Date.now()}-${Math.random()}`,
-          }));
-
-          setCoinBursts((current) => [
-            ...current,
-            ...burstIds,
-          ]);
-
-          window.setTimeout(() => {
-            setCoinBursts((current) =>
-              current.filter(
-                (burst) =>
-                  !burstIds.some((item) => item.id === burst.id)
-              )
-            );
-          }, 600);
-        }
-      }
-
-
-      /* ===================================================
-         LETTER COLLECTION
-      =================================================== */
+      /* ---------------------------------------------
+         LETTER COLLISIONS
+      --------------------------------------------- */
 
       const remainingLetters = [];
 
-      let letterCollected = false;
+      for (const item of g.letters) {
+        const horizontal =
+          Math.abs(
+            item.x -
+            playerX
+          );
 
-      for (
-        const letter of
-        state.letters
-      ) {
-        const letterRect =
-          rectOf(
-            letter,
-            48,
-            0.9
+        const vertical =
+          Math.abs(
+            item.y -
+            playerY
           );
 
         if (
-          overlaps(
-            playerRect,
-            letterRect
-          )
+          horizontal < 6 &&
+          vertical < 70
         ) {
-          state.collected.add(
-            letter.ch
+          if (
+            !g.collectedLetters.includes(
+              item.letter
+            )
+          ) {
+            const newCollectedLetters =
+              [
+                ...g.collectedLetters,
+                item.letter,
+              ];
+
+            /*
+             * =================================================
+             * WORD HUNT LOOP FIX
+             *
+             * When the last letter is collected,
+             * reset collectedLetters to [].
+             *
+             * This makes the same word start again
+             * automatically.
+             * =================================================
+             */
+
+            if (
+              newCollectedLetters.length ===
+              g.word.length
+            ) {
+              g.collectedLetters =
+                [];
+            } else {
+              g.collectedLetters =
+                newCollectedLetters;
+            }
+
+            g.score += 100;
+          }
+
+          letterRefs.current.delete(
+            item.id
           );
 
-          letterCollected = true;
+          objectsChanged = true;
         } else {
           remainingLetters.push(
-            letter
+            item
           );
         }
       }
 
-      state.letters =
+      g.letters =
         remainingLetters;
 
+      /* ---------------------------------------------
+         SYNC OBJECT LISTS TO REACT
+      --------------------------------------------- */
 
-      /* ===================================================
-         WORD COMPLETION
-      =================================================== */
+      if (objectsChanged) {
+        setEnemies([
+          ...g.enemies,
+        ]);
 
-      const uniqueLetters =
-        new Set(
-          state.word.split("")
-        );
+        setCoins([
+          ...g.coins,
+        ]);
 
-      const isComplete =
-        [...uniqueLetters].every(
-          (letter) =>
-            state.collected.has(
-              letter
-            )
-        );
-
-      let wordJustCompleted =
-        false;
-
-      if (isComplete) {
-        wordJustCompleted = true;
-
-        state.score += 300;
-
-        state.word =
-          pickWord(
-            state.word
-          );
-
-        state.collected =
-          new Set();
+        setLetters([
+          ...g.letters,
+        ]);
       }
 
-
-      /* ===================================================
-         SCORE
-      =================================================== */
-
-      state.score +=
-        (state.fallSpeed /
-          1000) *
-        dt *
-        0.02;
-
-
-      /* ===================================================
-         REACT UPDATE
-      =================================================== */
-
-      setPlayerX(
-        state.playerX
-      );
-
-      setEnemies([
-        ...state.enemies,
-      ]);
-
-      setCoins([
-        ...state.coins,
-      ]);
-
-      setLetters([
-        ...state.letters,
-      ]);
-
-      setHud({
-        score: Math.floor(
-          state.score
-        ),
-
-        coins:
-          state.coinsCollected,
-
-        speed:
-          Math.round(
-            state.fallSpeed *
-            0.45
-          ),
-
-        boosting:
-          state.boosting,
-      });
+      /* ---------------------------------------------
+         HUD UPDATE
+      --------------------------------------------- */
 
       if (
-        wordJustCompleted ||
-        letterCollected
+        time -
+        g.lastHudUpdate >
+        70
       ) {
-        setWordState({
-          word: state.word,
+        g.lastHudUpdate = time;
 
-          collected: [
-            ...state.collected,
-          ],
-        });
-      }
-
-
-      /* ===================================================
-         CRASH
-      =================================================== */
-
-      if (hitEnemy) {
-        releaseAllKeys();
-
-        if (
-          backgroundMusicRef.current
-        ) {
-          backgroundMusicRef.current.pause();
-
-          backgroundMusicRef.current.currentTime = 0;
-        }
-
-        if (
-          crashSoundRef.current
-        ) {
-          crashSoundRef.current.currentTime = 0;
-
-          crashSoundRef.current
-            .play()
-            .catch(() => { });
-        }
-
-        const finalScore =
+        setScore(
           Math.floor(
-            state.score
-          );
-
-        if (
-          finalScore > best
-        ) {
-          try {
-            localStorage.setItem(
-              "streetRacerBest",
-              String(
-                finalScore
-              )
-            );
-          } catch { }
-
-          setBest(
-            finalScore
-          );
-        }
-
-        setCrashed(true);
-
-        return;
-      }
-
-
-      /* ===================================================
-         NEXT FRAME
-      =================================================== */
-
-      rafRef.current =
-        requestAnimationFrame(
-          tick
+            g.score
+          )
         );
+
+        setSpeed(
+          Math.floor(
+            currentSpeed
+          )
+        );
+
+        setFuel(
+          Math.floor(
+            g.fuel
+          )
+        );
+
+        setCombo(g.combo);
+        setLevel(g.level);
+
+        setCollectedLetters([
+          ...g.collectedLetters,
+        ]);
+      }
     };
 
-
-    rafRef.current =
-      requestAnimationFrame(
-        tick
-      );
-
+    animationRef.current =
+      requestAnimationFrame(loop);
 
     return () => {
-      if (rafRef.current) {
+      if (animationRef.current) {
         cancelAnimationFrame(
-          rafRef.current
+          animationRef.current
         );
       }
-
-      releaseAllKeys();
     };
   }, [
-    started,
-    paused,
-    crashed,
-    best,
-    getSizes,
-    clampPlayerX,
-    releaseAllKeys,
+    crashGame,
+    getRoadBounds,
+    spawnEnemy,
+    spawnCoin,
+    spawnLetter,
+    updateGameSize,
   ]);
 
-
-  /* =======================================================
-     CLEANUP WHEN COMPONENT UNMOUNTS
-  ======================================================= */
+  /* =====================================================
+     MUSIC
+  ===================================================== */
 
   useEffect(() => {
-    return () => {
-      releaseAllKeys();
+    localStorage.setItem(
+      MUTED_KEY,
+      String(muted)
+    );
 
-      if (rafRef.current) {
-        cancelAnimationFrame(
-          rafRef.current
-        );
+    if (muted) {
+      musicRef.current?.pause();
+    } else if (
+      game.current.running &&
+      !game.current.paused
+    ) {
+      musicRef.current
+        ?.play()
+        .catch(() => { });
+    }
+  }, [muted]);
+
+  /* =====================================================
+     RESIZE
+  ===================================================== */
+
+  useEffect(() => {
+    const resize = () => {
+      updateGameSize();
+    };
+
+    window.addEventListener(
+      "resize",
+      resize
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        resize
+      );
+    };
+  }, [updateGameSize]);
+
+  /* =====================================================
+     FULLSCREEN
+  ===================================================== */
+
+  const toggleFullscreen =
+    async () => {
+      try {
+        if (
+          !document.fullscreenElement
+        ) {
+          await document.documentElement.requestFullscreen();
+
+          setFullscreen(true);
+        } else {
+          await document.exitFullscreen();
+
+          setFullscreen(false);
+        }
+      } catch {
+        setFullscreen(false);
       }
     };
-  }, [
-    releaseAllKeys,
-  ]);
 
-
-  /* =======================================================
+  /* =====================================================
      RENDER
-  ======================================================= */
+  ===================================================== */
 
   return (
-    <div className="container">
+    <div
+      className={`appShell ${game.current.boosting
+        ? "boostMode"
+        : ""
+        }`}
+    >
+      {/* AUDIO */}
 
-      {/* ===================================================
-          HEADER
-      =================================================== */}
+      <audio
+        ref={musicRef}
+        src={MUSIC_SRC}
+        loop
+        preload="auto"
+      />
 
-      <header className="header">
+      <audio
+        ref={crashAudioRef}
+        src={CRASH_SOUND_SRC}
+        preload="auto"
+      />
 
-        <div className="logo">
-          🏎️
+      {/* =================================================
+                HEADER
+            ================================================= */}
+
+      <header className="topHeader">
+        <div className="brand">
+          <div className="brandMark">
+            SR
+          </div>
+
+          <div>
+            <h1>
+              STREET RACER
+            </h1>
+
+            <span>
+              HIGHWAY EDITION
+            </span>
+          </div>
         </div>
 
-        <div className="brand-text">
+        <div className="headerRight">
+          <div className="headerStatus">
+            <span className="statusDot" />
+            LIVE
+          </div>
 
-          <h1>
-            STREET RACER
-          </h1>
+          <div className="headerControls">
+            <button
+              className="iconButton"
+              onClick={() =>
+                setMuted(
+                  (value) =>
+                    !value
+                )
+              }
+              aria-label="Toggle sound"
+            >
+              {muted
+                ? "🔇"
+                : "🔊"}
+            </button>
 
-          <p>
-            HIGHWAY EDITION
-          </p>
-
+            <button
+              className="iconButton"
+              onClick={
+                toggleFullscreen
+              }
+              aria-label="Fullscreen"
+            >
+              ⛶
+            </button>
+          </div>
         </div>
-
       </header>
 
+      {/* =================================================
+                MAIN
+            ================================================= */}
 
-      {/* ===================================================
-          LETTER COLLECTOR
-      =================================================== */}
+      <main className="gameWrapper">
+        {/* LEFT PANEL */}
 
-      {started && (
-        <section className="letterCollector" aria-label="Letter Collector">
-          <div className="collectorHeader">
-            <div className="collectorIcon">🔤</div>
-
-            <div className="collectorText">
-              <span className="collectorLabel">LETTER COLLECTOR</span>
-              <span className="collectorHint">Collect letters to complete the word</span>
-            </div>
+        <aside className="sidePanel leftPanel">
+          <div className="panelTitle">
+            RACE DATA
           </div>
 
-          <div className="wordDisplay">
-            {wordState.word.split("").map((character, index) => (
-              <span
-                key={`${character}-${index}`}
-                className={
-                  wordState.collected.includes(character)
-                    ? "collected-letter"
-                    : "pending-letter"
-                }
-              >
-                {character}
-              </span>
-            ))}
-          </div>
-
-          <div className="collectorProgress">
-            {wordState.collected.length} / {new Set(wordState.word.split("")).size} COLLECTED
-          </div>
-        </section>
-      )}
-
-
-      {/* ===================================================
-          GAME LAYOUT
-      =================================================== */}
-
-      <div className="gameLayout">
-
-
-        {/* =================================================
-            LEFT DASHBOARD
-        ================================================= */}
-
-        <aside className="sideBoard leftBoard">
-
-          <div className="statCard">
-
-            <span className="statIcon">
-              🏆
-            </span>
-
-            <span className="label">
+          <div className="statCard scoreCard">
+            <span className="statLabel">
               SCORE
             </span>
 
             <strong>
-              {hud.score}
+              {score.toLocaleString()}
             </strong>
-
           </div>
 
-
-          <div className="statCard coinCard">
-
-            <span className="statIcon">
-              🪙
-            </span>
-
-            <span className="label">
-              COINS
+          <div className="statCard">
+            <span className="statLabel">
+              BEST
             </span>
 
             <strong>
-              {hud.coins}
+              {best.toLocaleString()}
             </strong>
-
           </div>
 
+          <div className="statCard">
+            <span className="statLabel">
+              LEVEL
+            </span>
+
+            <strong>
+              {level}
+            </strong>
+          </div>
+
+          <div className="tipCard">
+            <span>TIP</span>
+
+            <p>
+              Move your mouse
+              across the track
+              to steer.
+            </p>
+          </div>
         </aside>
 
-
         {/* =================================================
-            GAME AREA
-        ================================================= */}
+                    GAME AREA
+                ================================================= */}
 
-        <div
-          className="gameArea"
-          ref={gameAreaRef}
+        <section
+          ref={gameRef}
+          className={`gameArea ${paused
+            ? "gamePaused"
+            : ""
+            }`}
           onPointerMove={
             handlePointerMove
           }
-          onPointerDown={
-            handlePointerMove
+          onPointerEnter={() =>
+            setTouchVisible(
+              false
+            )
+          }
+          onTouchStart={() =>
+            setTouchVisible(
+              true
+            )
           }
         >
+          {/* SKY */}
 
-          {/* ROAD GLOW */}
+          <div className="sky">
+            <div className="moon" />
 
-          <div className="roadGlow leftGlow" />
+            {Array.from({
+              length: 28,
+            }).map(
+              (_, index) => (
+                <span
+                  key={index}
+                  className="star"
+                  style={{
+                    left: `${(index *
+                      37) %
+                      100
+                      }%`,
+                    top: `${(index *
+                      23) %
+                      42
+                      }%`,
+                    animationDelay: `${index *
+                      0.17
+                      }s`,
+                  }}
+                />
+              )
+            )}
+          </div>
 
-          <div className="roadGlow rightGlow" />
+          {/* CITY HORIZON */}
 
+          <div className="city">
+            {Array.from({
+              length: 15,
+            }).map(
+              (_, index) => (
+                <div
+                  key={index}
+                  className="building"
+                  style={{
+                    height: `${45 +
+                      ((index *
+                        31) %
+                        75)
+                      }px`,
+                  }}
+                >
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              )
+            )}
+          </div>
 
-          {/* ROAD EDGES */}
+          {/* STRAIGHT ROAD */}
 
-          <div className="roadEdge leftEdge" />
+          <div className="road">
+            <div className="roadGlow" />
 
-          <div className="roadEdge rightEdge" />
+            <div className="roadEdge roadEdgeLeft" />
+            <div className="roadEdge roadEdgeRight" />
 
+            <div className="lane laneLeft" />
+            <div className="lane laneRight" />
 
-          {/* ROAD LINES */}
+            <div className="roadTexture" />
+          </div>
 
-          <div className="roadLine roadLine1" />
+          {/* SPEED LINES */}
 
-          <div className="roadLine roadLine2" />
+          <div className="speedLines">
+            {Array.from({
+              length: 16,
+            }).map(
+              (_, index) => (
+                <span
+                  key={index}
+                  style={{
+                    left: `${14 +
+                      ((index *
+                        17) %
+                        72)
+                      }%`,
+                    animationDelay: `${index *
+                      0.09
+                      }s`,
+                  }}
+                />
+              )
+            )}
+          </div>
 
-          <div className="roadLine roadLine3" />
+          {/* RACE STATUS */}
 
-          <div className="roadLine roadLine4" />
+          <div className="raceStatus">
+            <span>
+              SPEED
+            </span>
 
-          <div className="roadLine roadLine5" />
+            <strong>
+              {speed}
 
-          <div className="roadLine roadLine6" />
+              <small>
+                KM/H
+              </small>
+            </strong>
+          </div>
 
+          {/* WORD HUNT */}
 
+          <div className="wordHunt">
+            <div className="wordHeader">
+              <span>
+                WORD HUNT
+              </span>
 
-          {/* SPEED EFFECT */}
-
-          <div
-            id="speedEffect"
-            className={
-              hud.boosting
-                ? "active"
-                : ""
-            }
-          />
-
-
-          {/* =================================================
-              PLAYER
-          ================================================= */}
-
-          {started && (
-            <div className="playerWrapper">
-
-              <img
-                className="car playerCar"
-                src="/images/mycar.png"
-                alt="Player Car"
-                draggable="false"
-                style={{
-                  left: `${playerX}%`,
-                  transform:
-                    "translateX(-50%)",
-                }}
-              />
-
+              <strong>
+                {
+                  collectedLetters.length
+                }
+                /
+                {
+                  game.current
+                    .word
+                    .length
+                }
+              </strong>
             </div>
-          )}
 
+            <div className="wordLetters">
+              {game.current.word
+                .split("")
+                .map(
+                  (
+                    letter,
+                    index
+                  ) => (
+                    <div
+                      key={
+                        index
+                      }
+                      className={`letterFound ${collectedLetters.includes(
+                        letter
+                      )
+                        ? "active"
+                        : ""
+                        }`}
+                    >
+                      {collectedLetters.includes(
+                        letter
+                      )
+                        ? letter
+                        : "?"}
+                    </div>
+                  )
+                )}
+            </div>
+          </div>
 
-          {/* =================================================
-              ENEMIES
-          ================================================= */}
+          {/* ENEMIES */}
 
           {enemies.map(
             (enemy) => (
-              <img
-                key={enemy.id}
-                className="enemyCar"
-                src={enemy.img}
-                alt="Enemy car"
-                draggable="false"
+              <div
+                key={
+                  enemy.id
+                }
+                ref={(el) => {
+                  if (el) {
+                    enemyRefs.current.set(
+                      enemy.id,
+                      el
+                    );
+                  } else {
+                    enemyRefs.current.delete(
+                      enemy.id
+                    );
+                  }
+                }}
+                className="dynamicObject enemyObject"
                 style={{
                   left: `${enemy.x}%`,
-                  top: `${enemy.y}px`,
-                  transform:
-                    "translateX(-50%)",
+                  transform: `translate3d(-50%, ${enemy.y}px, 0)`,
                 }}
-              />
+              >
+                <div className="enemyShadow" />
+
+                <img
+                  src={
+                    enemy.image
+                  }
+                  alt=""
+                  draggable="false"
+                />
+              </div>
             )
           )}
 
+          {/* COINS */}
 
-          {/* =================================================
-              COINS
-          ================================================= */}
-
-          <div id="coinContainer">
-
-            {coinBursts.map((burst) => (
+          {coins.map(
+            (coin) => (
               <div
-                key={burst.id}
-                className="coinBurst"
-                style={{
-                  left: `${burst.x}%`,
-                  top: `${burst.y}px`,
+                key={coin.id}
+                ref={(el) => {
+                  if (el) {
+                    coinRefs.current.set(
+                      coin.id,
+                      el
+                    );
+                  } else {
+                    coinRefs.current.delete(
+                      coin.id
+                    );
+                  }
                 }}
-                aria-hidden="true"
+                className="dynamicObject coinObject"
+                style={{
+                  left: `${coin.x}%`,
+                  transform: `translate3d(-50%, ${coin.y}px, 0) rotate(${coin.rotation}deg)`,
+                }}
               >
-                <span className="burstCore">✦</span>
-                <span className="burstRay ray1">✦</span>
-                <span className="burstRay ray2">✦</span>
-                <span className="burstRay ray3">✦</span>
-                <span className="burstRay ray4">✦</span>
-                <span className="burstRay ray5">✦</span>
-                <span className="burstRay ray6">✦</span>
-                <span className="burstRing" />
+                <div className="coinOuter">
+                  <div className="coinInner">
+                    $
+                  </div>
+                </div>
               </div>
-            ))}
+            )
+          )}
 
-            {coins.map(
-              (coin) => (
-                <div
-                  key={coin.id}
-                  className="coin"
-                  style={{
-                    left: `${coin.x}%`,
-                    top: `${coin.y}px`,
-                    transform:
-                      "translateX(-50%)",
-                  }}
-                >
-                  🪙
+          {/* LETTERS */}
+
+          {letters.map(
+            (item) => (
+              <div
+                key={item.id}
+                ref={(el) => {
+                  if (el) {
+                    letterRefs.current.set(
+                      item.id,
+                      el
+                    );
+                  } else {
+                    letterRefs.current.delete(
+                      item.id
+                    );
+                  }
+                }}
+                className="dynamicObject letterObject"
+                style={{
+                  left: `${item.x}%`,
+                  transform: `translate3d(-50%, ${item.y}px, 0)`,
+                }}
+              >
+                <div className="letterGlow">
+                  {
+                    item.letter
+                  }
                 </div>
-              )
-            )}
+              </div>
+            )
+          )}
 
+          {/* PLAYER */}
+
+          <div
+            ref={playerRef}
+            className={`playerCar ${game.current
+              .boosting
+              ? "boosting"
+              : ""
+              }`}
+            style={{
+              left: "50%",
+            }}
+          >
+            <div className="playerShadow" />
+
+            <img
+              src={PLAYER_IMAGE}
+              alt="Player car"
+              draggable="false"
+            />
+
+            <div className="playerGlow" />
+
+            {game.current
+              .boosting && (
+                <div className="nitroFlames">
+                  <span />
+                  <span />
+                </div>
+              )}
           </div>
 
+          {/* SPEEDOMETER */}
 
-          {/* =================================================
-              LETTERS
-          ================================================= */}
+          <div className="speedometer">
+            <div className="speedRing">
+              <div className="speedValue">
+                {speed}
+              </div>
 
-          <div id="letterContainer">
-
-            {letters.map(
-              (letter) => (
-                <div
-                  key={letter.id}
-                  className="letter"
-                  style={{
-                    left: `${letter.x}%`,
-                    top: `${letter.y}px`,
-                    transform:
-                      "translateX(-50%)",
-                  }}
-                >
-                  {letter.ch}
-                </div>
-              )
-            )}
-
+              <span>
+                KM/H
+              </span>
+            </div>
           </div>
 
-
-          {/* =================================================
-              START SCREEN
-          ================================================= */}
+          {/* START */}
 
           {!started && (
-            <div className="overlay">
-
-              <div className="overlayCard">
-
-                <div className="raceIcon">
-                  🏁
+            <div className="gameOverlay">
+              <div className="startCard">
+                <div className="gameLogo">
+                  SR
                 </div>
 
-                <h2>
+                <div className="editionText">
                   STREET RACER
+                </div>
+
+                <div className="logoDivider" />
+
+                <h2>
+                  READY TO
+                  RACE?
                 </h2>
 
                 <p>
-                  Dodge traffic,
-                  <br />
-                  collect coins &
-                  <br />
-                  complete words!
+                  Steer with your
+                  mouse and
+                  survive the
+                  highway.
                 </p>
 
-                <div className="quickControls">
-
-                  <span>
-                    ← → DRIVE
-                  </span>
-
-                  <span>
-                    ⚡ BOOST
-                  </span>
-
-                  <span>
-                    🪙 COLLECT
-                  </span>
-
-                </div>
-
                 <button
-                  type="button"
                   className="mainButton"
                   onClick={
-                    startGame
+                    resetGame
                   }
                 >
-                  🏁 START RACE
+                  START RACE
                 </button>
 
-              </div>
+                <div className="keyboardHints">
+                  <span>
+                    ← →
+                    STEER
+                  </span>
 
+                  <span>
+                    SHIFT
+                    BOOST
+                  </span>
+
+                  <span>
+                    P
+                    PAUSE
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
+          {/* PAUSE */}
 
-          {/* =================================================
-              PAUSE
-          ================================================= */}
-
-          {started &&
-            paused &&
+          {paused &&
             !crashed && (
-              <div className="overlay">
-
-                <div className="overlayCard">
-
-                  <div className="pauseIcon">
-                    ⏸️
+              <div className="gameOverlay">
+                <div className="pauseCard">
+                  <div className="pauseSymbol">
+                    ||
                   </div>
 
                   <h2>
@@ -1833,416 +1802,223 @@ function App() {
                   </h2>
 
                   <p>
-                    Take a breath.
-                    <br />
-                    The road will wait.
+                    Your race is
+                    waiting.
                   </p>
 
                   <button
-                    type="button"
                     className="mainButton"
-                    onClick={() =>
-                      setPaused(false)
+                    onClick={
+                      togglePause
                     }
                   >
-                    ▶️ RESUME
+                    RESUME
                   </button>
-
                 </div>
-
               </div>
             )}
 
-
-          {/* =================================================
-              CRASH
-          ================================================= */}
+          {/* CRASH */}
 
           {crashed && (
-            <div className="overlay">
-
-              <div className="overlayCard">
-
-                <div className="crashIcon">
-                  💥
+            <div className="gameOverlay">
+              <div className="crashCard">
+                <div className="crashBadge">
+                  CRASHED
                 </div>
 
+                {newBest && (
+                  <div className="newBestBadge">
+                    NEW BEST
+                  </div>
+                )}
+
                 <h2>
-                  CRASHED!
+                  RACE OVER
                 </h2>
 
-                <p>
-                  Score:{" "}
+                <div className="finalScore">
+                  {score.toLocaleString()}
+                </div>
+
+                <div className="resultRow">
+                  <span>
+                    BEST
+                  </span>
+
                   <strong>
-                    {hud.score}
+                    {best.toLocaleString()}
                   </strong>
-
-                  <br />
-
-                  Best:{" "}
-                  <strong>
-                    {best}
-                  </strong>
-
-                  <br />
-
-                  Coins collected:{" "}
-                  <strong>
-                    {hud.coins}
-                  </strong>
-                </p>
+                </div>
 
                 <button
-                  type="button"
                   className="mainButton"
                   onClick={
-                    restartGame
+                    resetGame
                   }
                 >
-                  🔄 RACE AGAIN
+                  RACE AGAIN
                 </button>
 
+                <div className="restartHint">
+                  PRESS ENTER TO
+                  RESTART
+                </div>
               </div>
-
             </div>
           )}
 
-        </div>
+          {/* MOBILE CONTROLS */}
 
+          <div
+            className={`mobileControls ${touchVisible
+              ? "touchVisible"
+              : ""
+              }`}
+          >
+            <button
+              className="controlButton steeringButton"
+              onPointerDown={
+                steerLeft
+              }
+            >
+              ←
+            </button>
 
-        {/* =================================================
-            RIGHT DASHBOARD
-        ================================================= */}
+            <button
+              className="controlButton nitroButton"
+              onPointerDown={
+                startBoost
+              }
+              onPointerUp={
+                stopBoost
+              }
+              onPointerCancel={
+                stopBoost
+              }
+            >
+              BOOST
+            </button>
 
-        <aside className="sideBoard rightBoard">
+            <button
+              className="controlButton steeringButton"
+              onPointerDown={
+                steerRight
+              }
+            >
+              →
+            </button>
 
-          <div className="statCard">
+            <button
+              className="controlButton pauseButton"
+              onClick={
+                togglePause
+              }
+            >
+              ||
+            </button>
+          </div>
+        </section>
 
-            <span className="statIcon">
-              👑
-            </span>
+        {/* RIGHT PANEL */}
 
-            <span className="label">
-              BEST
-            </span>
-
-            <strong>
-              {best}
-            </strong>
-
+        <aside className="sidePanel rightPanel">
+          <div className="panelTitle">
+            VEHICLE
           </div>
 
-
-          <div className="statCard speedCard">
-
-            <span className="statIcon">
-              ⚡
-            </span>
-
-            <span className="label">
+          <div className="statCard">
+            <span className="statLabel">
               SPEED
             </span>
 
             <strong>
-              {hud.speed}
+              {speed}
 
               <small>
-                {" "}KM/H
+                {" "}
+                KM/H
               </small>
             </strong>
-
           </div>
 
+          <div className="boostCard">
+            <div className="boostHeader">
+              <span>
+                NITRO
+              </span>
+
+              <strong>
+                {fuel}%
+              </strong>
+            </div>
+
+            <div className="fuelGauge">
+              <div
+                className={`fuelFill ${fuel < 20
+                  ? "fuelDraining"
+                  : ""
+                  }`}
+                style={{
+                  width: `${fuel}%`,
+                }}
+              />
+            </div>
+
+            <small>
+              HOLD SHIFT
+            </small>
+          </div>
+
+          <div className="comboCard">
+            <span>
+              COMBO
+            </span>
+
+            <strong>
+              x{combo}
+            </strong>
+          </div>
+
+          <div className="controlsCard">
+            <div className="panelTitle">
+              CONTROLS
+            </div>
+
+            <p>
+              <kbd>←</kbd>
+              <kbd>→</kbd>
+              Steer
+            </p>
+
+            <p>
+              <kbd>SHIFT</kbd>
+              Boost
+            </p>
+
+            <p>
+              <kbd>P</kbd>
+              Pause
+            </p>
+          </div>
         </aside>
+      </main>
 
-      </div>
-
-
-      {/* ===================================================
-          GAME CONTROLS
-      =================================================== */}
-
-      <div className="gameControls">
-
-
-        {/* LEFT */}
-
-        <button
-          type="button"
-          className="controlButton directionButton"
-          onPointerDown={() =>
-            setKey("left", true)
-          }
-          onPointerUp={() =>
-            setKey("left", false)
-          }
-          onPointerCancel={() =>
-            setKey("left", false)
-          }
-          onPointerLeave={() =>
-            setKey("left", false)
-          }
-        >
-          <span>
-            ◀
-          </span>
-
-          <small>
-            LEFT
-          </small>
-        </button>
-
-
-        {/* CENTER */}
-
-        <div className="centerControls">
-
-
-          {/* BOOST */}
-
-          <button
-            type="button"
-            className="controlButton accelerator"
-            onPointerDown={() =>
-              setKey(
-                "boost",
-                true
-              )
-            }
-            onPointerUp={() =>
-              setKey(
-                "boost",
-                false
-              )
-            }
-            onPointerCancel={() =>
-              setKey(
-                "boost",
-                false
-              )
-            }
-            onPointerLeave={() =>
-              setKey(
-                "boost",
-                false
-              )
-            }
-          >
-            <span>
-              ⚡
-            </span>
-
-            <small>
-              ACCEL
-            </small>
-          </button>
-
-
-          {/* PAUSE */}
-
-          <button
-            type="button"
-            className="pauseButton"
-            onClick={() => {
-              if (
-                started &&
-                !crashed
-              ) {
-                setPaused(
-                  (value) =>
-                    !value
-                );
-              }
-            }}
-          >
-            ⏸️
-          </button>
-
-
-          {/* BRAKE */}
-
-          <button
-            type="button"
-            className="controlButton brake"
-            onPointerDown={() =>
-              setKey(
-                "brake",
-                true
-              )
-            }
-            onPointerUp={() =>
-              setKey(
-                "brake",
-                false
-              )
-            }
-            onPointerCancel={() =>
-              setKey(
-                "brake",
-                false
-              )
-            }
-            onPointerLeave={() =>
-              setKey(
-                "brake",
-                false
-              )
-            }
-          >
-            <span>
-              🛑
-            </span>
-
-            <small>
-              BRAKE
-            </small>
-          </button>
-
-        </div>
-
-
-        {/* RIGHT */}
-
-        <button
-          type="button"
-          className="controlButton directionButton"
-          onPointerDown={() =>
-            setKey("right", true)
-          }
-          onPointerUp={() =>
-            setKey("right", false)
-          }
-          onPointerCancel={() =>
-            setKey(
-              "right",
-              false
-            )
-          }
-          onPointerLeave={() =>
-            setKey(
-              "right",
-              false
-            )
-          }
-        >
-          <span>
-            ▶
-          </span>
-
-          <small>
-            RIGHT
-          </small>
-        </button>
-
-      </div>
-
-
-      {/* ===================================================
-          CONTROL INFO
-      =================================================== */}
-
-      <div className="controlInfo">
-
-        <div className="controlItem">
-
-          <span>
-            ⌨️
-          </span>
-
-          <b>
-            Drive
-          </b>
-
-          <small>
-            ← → / A D
-          </small>
-
-        </div>
-
-
-        <div className="controlItem">
-
-          <span>
-            ⚡
-          </span>
-
-          <b>
-            Boost
-          </b>
-
-          <small>
-            ↑ / W / Space
-          </small>
-
-        </div>
-
-
-        <div className="controlItem">
-
-          <span>
-            🖱️
-          </span>
-
-          <b>
-            Mouse / Touch
-          </b>
-
-          <small>
-            Move on road
-          </small>
-
-        </div>
-
-
-        <div className="controlItem">
-
-          <span>
-            ⏸️
-          </span>
-
-          <b>
-            Pause
-          </b>
-
-          <small>
-            P / Button
-          </small>
-
-        </div>
-
-      </div>
-
-
-      {/* ===================================================
-          FOOTER
-      =================================================== */}
+      {/* FOOTER */}
 
       <footer>
-
         <span>
-          🏁 STREET RACER
+          STREET RACER
         </span>
 
-        <i>
-          •
-        </i>
-
         <span>
-          DRIVE SAFE
+          HIGHWAY EDITION
         </span>
 
-        <i>
-          •
-        </i>
-
         <span>
-          BEAT YOUR BEST
+          © 2026
         </span>
-
       </footer>
-
     </div>
   );
 }
-
-export default App;
